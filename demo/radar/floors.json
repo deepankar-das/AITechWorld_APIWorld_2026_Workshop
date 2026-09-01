@@ -1,0 +1,41 @@
+{
+  "_comment": "Mandatory RADAR floors — anchor tests the selector may never drop, whatever the blast-radius analysis says. Each maps to a system-level invariant Enforcer has committed to protect.",
+  "floors": [
+    {
+      "test": "tests/integration/audit-enrich-immutability.test.ts",
+      "invariant": "no silent corruption of persisted state",
+      "reason": "the enrichment endpoint must append, never mutate the original audit event",
+      "dimension": "system-level invariant"
+    },
+    {
+      "test": "tests/integration/audit-pipeline.test.ts",
+      "invariant": "no silent corruption of persisted state",
+      "reason": "audit store is append-only; count only increases",
+      "dimension": "system-level invariant"
+    },
+    {
+      "test": "tests/policy-engine.test.ts",
+      "invariant": "no authorization bypass on any privileged operation",
+      "reason": "policy engine defaults to deny on unmatched actions",
+      "dimension": "system-level invariant"
+    },
+    {
+      "test": "tests/mcp-gateway.test.ts",
+      "invariant": "no authorization bypass on any privileged operation",
+      "reason": "MCP gateway denies calls to unregistered servers and non-allowlisted tools",
+      "dimension": "system-level invariant"
+    },
+    {
+      "test": "tests/approval-service.test.ts",
+      "invariant": "no privilege escalation without a recorded human decision",
+      "reason": "break-glass requires a rationale; approval scopes are single-use / time-bounded",
+      "dimension": "system-level invariant"
+    },
+    {
+      "test": "tests/security/rbac-regression.test.ts",
+      "invariant": "no authorization bypass on any privileged operation",
+      "reason": "RBAC role boundaries on the daemon and hub APIs",
+      "dimension": "system-level invariant"
+    }
+  ]
+}

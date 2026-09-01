@@ -1,0 +1,80 @@
+{
+  "_comment": "Reachability map — source path prefix -> tests it can reach, plus the blast-radius dimension and the reason the test is pulled in. A change's manifest lists the files it touched; RADAR unions the reachability hits with the mandatory floors.",
+  "reachability": [
+    {
+      "match": "src/daemon/routes/enrich.ts",
+      "dimension": "runtime path altered",
+      "reason": "change is on the audit enrichment write path",
+      "tests": [
+        "tests/integration/audit-enrich-immutability.test.ts",
+        "tests/integration/audit-pipeline.test.ts"
+      ]
+    },
+    {
+      "match": "src/audit/",
+      "dimension": "data structures written",
+      "reason": "change touches the audit store, buffer, or flush service",
+      "tests": ["tests/integration/audit-pipeline.test.ts"]
+    },
+    {
+      "match": "src/daemon/routes/audit.ts",
+      "dimension": "API contract exposed",
+      "reason": "change touches the audit query API surface",
+      "tests": ["tests/integration/audit-pipeline.test.ts"]
+    },
+    {
+      "match": "src/policy/",
+      "dimension": "runtime path altered",
+      "reason": "change touches policy evaluation, hierarchy, or loading",
+      "tests": ["tests/policy-engine.test.ts"]
+    },
+    {
+      "match": "src/daemon/routes/evaluate.ts",
+      "dimension": "API contract exposed",
+      "reason": "change touches the /v1/evaluate decision path",
+      "tests": ["tests/policy-engine.test.ts"]
+    },
+    {
+      "match": "src/enforcement/mcp-gateway.ts",
+      "dimension": "API contract consumed",
+      "reason": "change touches MCP tool mediation",
+      "tests": ["tests/mcp-gateway.test.ts"]
+    },
+    {
+      "match": "src/enforcement/redaction.ts",
+      "dimension": "data structures read",
+      "reason": "change touches secret / PII redaction",
+      "tests": ["tests/enforcement/redaction.test.ts"]
+    },
+    {
+      "match": "src/enforcement/secret-detector.ts",
+      "dimension": "data structures read",
+      "reason": "change touches credential detection",
+      "tests": ["tests/enforcement/redaction.test.ts"]
+    },
+    {
+      "match": "src/enforcement/command-classifier.ts",
+      "dimension": "runtime path altered",
+      "reason": "change touches shell command classification",
+      "tests": ["tests/enforcement/command-classifier.test.ts"]
+    },
+    {
+      "match": "src/enforcement/package-guard.ts",
+      "dimension": "runtime path altered",
+      "reason": "change touches package-install mediation",
+      "tests": ["tests/enforcement/package-guard.test.ts"]
+    },
+    {
+      "match": "src/approval/",
+      "dimension": "runtime path altered",
+      "reason": "change touches the approval / break-glass flow",
+      "tests": ["tests/approval-service.test.ts"]
+    },
+    {
+      "match": "src/intelligence/anomaly.ts",
+      "dimension": "historical failure correlation",
+      "reason": "change touches anomaly detection over action sequences",
+      "tests": ["tests/intelligence/anomaly.test.ts"]
+    }
+  ]
+}

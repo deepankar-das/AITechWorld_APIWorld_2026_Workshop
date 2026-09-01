@@ -37,3 +37,6 @@ playwright-report/
 
 # Go toolchain tarball (re-downloadable; do not commit)
 go1.*.tar.gz
+
+# Enforcer demo — produced run artifacts
+demo/run-folder/

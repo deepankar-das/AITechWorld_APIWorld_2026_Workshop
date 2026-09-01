@@ -1,0 +1,8 @@
+{
+  "_comment": "Copy this folder to demo/changes/<name>/, drop the modified source files under overlay/ mirroring the repo layout, and list every path they touch in `touched`. RADAR reads `touched` to compute the reachable corpus.",
+  "name": "TEMPLATE",
+  "summary": "one line describing the AI-generated change",
+  "touched": [
+    "src/daemon/routes/enrich.ts"
+  ]
+}
