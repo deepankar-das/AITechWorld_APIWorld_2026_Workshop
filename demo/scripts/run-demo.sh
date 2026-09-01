@@ -97,6 +97,22 @@ expect_gate(){
   return 0
 }
 
+# Confirm the seeded change is still applied. Catches another terminal window
+# reverting the file (git checkout, an editor save, revert.sh) mid-demo.
+require_applied(){
+  git -C "$ROOT" diff --quiet -- src/daemon/routes/enrich.ts && {
+    echo
+    echo "${RED}${B}  UNEXPECTED — src/daemon/routes/enrich.ts is back to its original form.${R}"
+    echo "${RED}  The seeded change is no longer applied. If you have another terminal or${R}"
+    echo "${RED}  editor open on this repo, something there undid it while the demo was${R}"
+    echo "${RED}  running. The demo can't continue from here without narrating something${R}"
+    echo "${RED}  that isn't true.${R}"
+    echo "${DIM}  Fix: close other work on this repo, then re-run from the top.${R}"
+    exit 1
+  }
+  return 0
+}
+
 DEMO_FILES="src/daemon/routes/enrich.ts tests/integration/audit-enrich-immutability.test.ts"
 
 # ── reset to a clean, known state — idempotent, safe on restart / repeat ────
@@ -158,6 +174,12 @@ why, apply a fix, and re-check everything.
 Nothing below is staged, scripted, or pre-recorded. Every
 command runs for real, live, against the actual code in this
 repository, and takes about 30 seconds of total run time.
+
+One rule while it runs: don't touch this repository from
+another terminal or editor window. The demo applies and removes
+a code change as it goes; if something else edits or reverts
+that file underneath it, the demo will notice and stop itself
+rather than show you something untrue.
 EOF
 
 echo "${B}THE 7 STEPS${R}"
@@ -280,6 +302,7 @@ watch the third check — the one that runs the tests relevant to
 this change. One of them is about to fail.
 EOF
 pause
+require_applied
 raw
 expect_gate fail node demo/radar/gate-fast.mjs --change 01-audit-mutation
 note "compiles fine, no secrets — but one test failed. That failing test exists specifically to protect the rule this change broke: a record must never be silently changed after it is written."
@@ -321,8 +344,48 @@ checking, no matter how small or safe a change looks. At the
 bottom, watch how many tests got picked out of the whole suite.
 EOF
 pause
+require_applied
 raw
 run node demo/radar/select.mjs --change 01-audit-mutation
+echo
+echo "${B}  What those six rules actually mean, in plain English${R}"
+say <<'EOF'
+The list above is terse. Here is each of the six mandatory
+floors, spelled out:
+
+  1. audit-enrich-immutability — when Enforcer records the
+     outcome of an action, it must ADD a new record, never edit
+     the original one. (This is the rule the seeded change
+     breaks.)
+
+  2. audit-pipeline — the audit log only ever grows. Records can
+     be added, never removed or overwritten. The total count can
+     only go up.
+
+  3. policy-engine — if an action doesn't match any rule, the
+     answer is "no". The system denies by default; it never
+     falls through to "allow" because nothing matched.
+
+  4. mcp-gateway — "MCP" is the protocol agents use to call
+     external tools. Enforcer blocks calls to any tool or
+     server that hasn't been explicitly put on the allowed
+     list.
+
+  5. approval-service — "break-glass" is the emergency override:
+     when someone needs to bypass a denial in a hurry, Enforcer
+     forces them to type a written reason first, and the
+     permission it grants works exactly ONCE and expires after
+     a set time. It can't be silently reused later, and there
+     is always a recorded reason for it.
+
+  6. rbac-regression — "RBAC" is role-based access control:
+     who is allowed to do what. This checks that an ordinary
+     user can't reach an admin-only operation on either the
+     local daemon or the central hub.
+
+None of these six can be dropped by the test selector, whatever
+the change looks like.
+EOF
 note "six tests were chosen, each with a stated reason — nothing here is a guess, and none of these six can be skipped. That is 6 of the repo's 10 test files — about 69 of its 152 individual tests. The rest weren't run because nothing about them could plausibly be affected by this change."
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -340,13 +403,14 @@ receipt. That receipt will say, in plain terms, whether this
 change is safe to merge.
 EOF
 pause
+require_applied
 raw
-run node demo/radar/run.mjs || true
+expect_gate fail node demo/radar/run.mjs
 echo
 echo "${B}  The receipt${R} ${DIM}(a permanent record of this result, saved next to the code)${R}"
 raw
 run cat "demo/run-folder/$(cat demo/run-folder/.latest)/receipt"
-note "\"admissible_for_merge\": false means the system will not allow this change to merge yet."
+note "the receipt says \"admissible_for_merge\": false — the system will not allow this change to merge yet."
 
 # ═══════════════════════════════════════════════════════════════════════════
 # STEP 6 — The fix
@@ -374,7 +438,7 @@ raw
 run git --no-pager diff --stat
 pause
 raw
-run node demo/radar/run.mjs || true
+expect_gate pass node demo/radar/run.mjs
 echo
 echo "${B}  The receipt now:${R}"
 raw

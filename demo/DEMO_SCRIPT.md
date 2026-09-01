@@ -48,9 +48,13 @@ git status --porcelain        # expect empty
 ```
 
 - [ ] `node demo/radar/gate-fast.mjs` → FAST GATE VERDICT: PASS
-- [ ] Editor open at `src/daemon/routes/enrich.ts`
+- [ ] Editor open at `src/daemon/routes/enrich.ts` — **read-only; don't save it**
 - [ ] Terminal font large; window wide enough for ~80 columns
 - [ ] Deck open at slide 34 (demo setup)
+- [ ] **No other terminal or editor is going to write to this repo during the
+      run.** The driver applies and reverts `enrich.ts` as it goes; if anything
+      else edits or reverts that file mid-run, `run-demo.sh` will stop itself
+      with a red `UNEXPECTED` message rather than narrate a stale result.
 
 ---
 
