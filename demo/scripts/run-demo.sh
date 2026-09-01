@@ -179,16 +179,41 @@ note "all three checks passed — the codebase is healthy before we start."
 # ═══════════════════════════════════════════════════════════════════════════
 step "The change lands"
 say <<'EOF'
-Now we apply the change an AI agent proposed. It edits exactly
-one file — the part of the system that records what actually
+Now we apply the change an AI agent proposed. It touches exactly
+one file — the part of Enforcer that records what actually
 happened after an action was taken.
 
-The agent's own reasoning sounds sensible: "we already have a
-record of what was attempted, so instead of adding a new record
-for what actually happened, let's just update the existing one
-in place." That saves a row of storage. It also, quietly,
-breaks a promise the system makes: a record, once written, is
-never changed afterward.
+Some background first. Enforcer keeps an audit trail: a log of
+every action an agent takes. When an agent attempts something,
+Enforcer writes a record marked "pending" — attempted, but the
+outcome isn't known yet. Once the action finishes, Enforcer has
+to record what really happened. There are two ways to do that:
+
+  THE CORRECT WAY  — write a brand-new second record that says
+  what actually happened, and link it back to the original
+  "pending" record by an ID. The original record is never
+  touched again, ever.
+
+  WHAT THIS CHANGE DOES INSTEAD  — skip writing a new record.
+  Find the original "pending" record and edit its own fields to
+  say what happened. One row instead of two.
+
+The agent's own justification for this sounds reasonable: "we
+already have a record of what was attempted, so instead of
+adding a new record for what actually happened, let's just
+update the existing one in place." Fewer rows, less duplication.
+
+Here is the problem. The entire point of an audit trail is that
+a security reviewer can trust it after the fact — during an
+investigation, it has to be treated as evidence. That trust
+rests on one hard promise: once a record is written, it is
+NEVER edited or deleted afterward, only ever added to. If
+records can be quietly edited in place, someone (or some bug,
+or an attacker) could go back and rewrite history — and no one
+could tell a genuine original record apart from one that was
+altered later. That is the promise this change quietly breaks,
+even though the code still compiles and almost every test still
+passes.
 
 First, here is the one file that changed:
 EOF
