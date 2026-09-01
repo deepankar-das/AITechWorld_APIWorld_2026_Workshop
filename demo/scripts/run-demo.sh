@@ -68,6 +68,35 @@ note(){ echo; echo "${AMBER}  In plain terms:${R} $1"; echo; }
 
 run(){ echo "${DIM}  \$ $*${R}"; "$@"; }
 
+# Run a gate and confirm its outcome is what this step of the demo expects.
+# Guards against a stale / half-reset tree silently making the on-screen
+# narration wrong (e.g. "a test failed" printed under a green PASS).
+#   $1 = "pass" | "fail"   (the expected outcome)   rest = the command
+expect_gate(){
+  local want="$1"; shift
+  echo "${DIM}  \$ $*${R}"
+  "$@"; local rc=$?
+  if [[ "$want" == "pass" && $rc -ne 0 ]]; then
+    echo
+    echo "${RED}${B}  UNEXPECTED — this check should pass on a clean tree, but it failed.${R}"
+    echo "${RED}  The demo is not starting from a known-good state, so it is stopping now${R}"
+    echo "${RED}  rather than narrate something that isn't true.${R}"
+    echo "${DIM}  Fix: run 'git status' — commit or stash anything unrelated — then re-run.${R}"
+    exit 1
+  fi
+  if [[ "$want" == "fail" && $rc -eq 0 ]]; then
+    echo
+    echo "${RED}${B}  UNEXPECTED — this check was supposed to FAIL here.${R}"
+    echo "${RED}  The seeded change should have broken the audit-immutability test, but${R}"
+    echo "${RED}  everything passed — which means the change is not actually in effect.${R}"
+    echo "${RED}  Stopping now so the demo doesn't show a green PASS under narration that${R}"
+    echo "${RED}  says a test failed.${R}"
+    echo "${DIM}  Fix: run 'demo/scripts/revert.sh', confirm 'git status' is clean, re-run.${R}"
+    exit 1
+  fi
+  return 0
+}
+
 DEMO_FILES="src/daemon/routes/enrich.ts tests/integration/audit-enrich-immutability.test.ts"
 
 # ── reset to a clean, known state — idempotent, safe on restart / repeat ────
@@ -171,7 +200,7 @@ Watch for three green PASS results below.
 EOF
 pause
 raw
-run node demo/radar/gate-fast.mjs || true
+expect_gate pass node demo/radar/gate-fast.mjs
 note "all three checks passed — the codebase is healthy before we start."
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -220,6 +249,14 @@ EOF
 pause
 raw
 run demo/scripts/apply-change.sh 01-audit-mutation
+if git -C "$ROOT" diff --quiet -- src/daemon/routes/enrich.ts; then
+  echo
+  echo "${RED}${B}  UNEXPECTED — applying the change left src/daemon/routes/enrich.ts${R}"
+  echo "${RED}${B}  unchanged.${R} ${RED}The overlay did not land; the rest of the demo would be${R}"
+  echo "${RED}  narrating a change that isn't there. Stopping.${R}"
+  echo "${DIM}  Fix: run 'demo/scripts/revert.sh', confirm 'git status' is clean, re-run.${R}"
+  exit 1
+fi
 echo
 echo "${B}  Summary of the change:${R}"
 raw
@@ -244,7 +281,7 @@ this change. One of them is about to fail.
 EOF
 pause
 raw
-run node demo/radar/gate-fast.mjs --change 01-audit-mutation || true
+expect_gate fail node demo/radar/gate-fast.mjs --change 01-audit-mutation
 note "compiles fine, no secrets — but one test failed. That failing test exists specifically to protect the rule this change broke: a record must never be silently changed after it is written."
 
 echo "${B}  How this actually gets fixed, in the full pipeline${R}"

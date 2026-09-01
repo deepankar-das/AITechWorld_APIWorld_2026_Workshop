@@ -255,3 +255,7 @@ demo/scripts/revert.sh
 - `apply-change.sh` refuses ("working tree is dirty") → `demo/scripts/revert.sh`,
   then `git stash` any unrelated edits, retry.
 - Wrong overlay stuck → `demo/scripts/revert.sh` unwinds the whole stack.
+- `run-demo.sh` stops with a red **UNEXPECTED** message → it detected the demo
+  state was wrong (baseline gate failing, or the seeded change not triggering a
+  test failure) and refused to narrate something untrue. It has already reverted
+  to a clean tree; run `git status` (expect only unrelated edits), then re-run.
