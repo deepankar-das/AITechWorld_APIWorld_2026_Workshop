@@ -1030,8 +1030,7 @@ $ demo/scripts/revert.sh                             back to a clean tree
 
 > Live demo
 >
-> Switch to the terminal.
-> Come back here when the demo closes.
+> **Demo.**
 >
 > demo/scripts/run-demo.sh — press Enter to advance each beat · fallback clips: slides 14 / 20 / 25
 
