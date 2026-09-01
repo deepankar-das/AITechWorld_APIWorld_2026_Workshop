@@ -27,50 +27,65 @@
   --font-body:    "IBM Plex Sans", system-ui, -apple-system, sans-serif;
   --font-mono:    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  --pad: clamp(1.4rem, 4.5vw, 4rem);
-  --navspace: 5.75rem;
-  --stageW: 980px;
+  --slideW: 1280px;
+  --slideH: 720px;
 }
 
 *{ box-sizing: border-box; }
 
+html, body{ height: 100%; }
 body{
   margin: 0;
   background: var(--ink);
   color: var(--chalk);
   font-family: var(--font-body);
   font-size: 17px;
-  line-height: 1.6;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow: hidden;
 }
 
-/* ---------- deck scaffold ---------- */
-.deck{ position: fixed; inset: 0; overflow: hidden; background: var(--ink); }
+/* ---------- fixed-canvas deck scaffold ---------- */
+.deck{
+  position: fixed; inset: 0;
+  overflow: hidden;
+  background: var(--ink);
+  display: grid;
+  place-items: center;
+}
+/* one 16:9 canvas, scaled as a whole unit by JS */
+.stage-wrap{
+  width: var(--slideW);
+  height: var(--slideH);
+  position: relative;
+  flex: none;
+  transform-origin: center center;
+}
 
 .slide{
   position: absolute;
   inset: 0;
   display: none;
-  place-items: center;
-  padding: var(--pad);
-  padding-bottom: calc(var(--pad) + var(--navspace));
+  padding: 60px 76px 104px;
+  overflow: hidden;
 }
-.slide.is-current{ display: grid; }
+.slide.is-current{
+  display: grid;
+  align-content: center;
+  justify-items: center;
+}
 .slide--divider{ background: var(--sunken); }
 
 .stage{
-  width: min(var(--stageW), 100%);
+  width: min(1060px, 100%);
   display: grid;
-  gap: 1.15rem;
-  transform-origin: center center;
-  will-change: transform;
+  gap: 1rem;
 }
-.stage > *{ max-width: 100%; }
+.stage > *{ max-width: 100%; min-width: 0; }
 
 @media (prefers-reduced-motion: no-preference){
-  .slide.is-current .stage{ animation: fadein .28s ease-out; }
+  .slide.is-current .stage{ animation: fadein .26s ease-out; }
 }
 @keyframes fadein{ from{ opacity: 0; } }
 
@@ -91,113 +106,119 @@ body{
 
 h1, h2, h3{ font-family: var(--font-display); font-weight: 600; color: var(--bright); text-wrap: balance; margin: 0; }
 
-.slide h2{ font-size: 2.5rem; line-height: 1.07; letter-spacing: -0.005em; }
+.slide h2{ font-size: 2rem; line-height: 1.12; letter-spacing: -0.005em; }
 
 .statement{
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 3.9rem;
-  line-height: 1.03;
+  font-size: 3.3rem;
+  line-height: 1.05;
   letter-spacing: -0.012em;
   color: var(--bright);
   text-wrap: balance;
   margin: 0;
 }
-.statement.sm{ font-size: 2.3rem; line-height: 1.15; }
+.statement.sm{ font-size: 1.95rem; line-height: 1.18; }
 .statement .lo{ color: var(--slate); }
 .statement .hi{ color: var(--amber); }
+.statement .nowrap{ white-space: nowrap; }
 
-.lede{ font-size: 1.22rem; line-height: 1.55; color: var(--chalk); max-width: 58ch; margin: 0; }
+.lede{ font-size: 1.06rem; line-height: 1.5; color: var(--chalk); max-width: 66ch; margin: 0; }
 .lede strong{ color: var(--bright); font-weight: 500; }
 .lede em{ color: var(--amber); font-style: normal; }
 
 .kicker{
   border-left: 2px solid var(--amber);
-  padding: .45rem 0 .45rem 1.1rem;
-  font-size: 1.16rem;
+  padding: .4rem 0 .4rem 1rem;
+  font-size: 1.02rem;
+  line-height: 1.45;
   color: var(--bright);
-  max-width: 56ch;
+  max-width: 64ch;
   margin: 0;
 }
 .kicker span{ color: var(--slate); }
 
-.cap{ font-size: .82rem; color: var(--slate-dim); font-family: var(--font-mono); letter-spacing: .02em; margin: 0; }
+.cap{ font-size: .8rem; color: var(--slate-dim); font-family: var(--font-mono); letter-spacing: .02em; margin: 0; }
 
-.act-num{ font-family: var(--font-mono); font-size: 6rem; font-weight: 400; color: var(--grid-2); line-height: 1; margin: 0; }
-.act-title{ font-size: 3rem; line-height: 1.05; }
+.byline{ font-family: var(--font-display); font-weight: 600; font-size: 1.5rem; line-height: 1.2; color: var(--bright); letter-spacing: -.005em; margin: .2rem 0 0; }
+.byline .role{ font-family: var(--font-body); font-weight: 400; color: var(--amber); font-size: .72em; letter-spacing: .01em; }
+
+.act-num{ font-family: var(--font-mono); font-size: 5rem; font-weight: 400; color: var(--grid-2); line-height: 1; margin: 0; }
+.act-title{ font-size: 2.5rem; line-height: 1.08; }
 
 /* ---------- layout blocks ---------- */
-.grid-2{ display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+.grid-2{ display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
 .grid-2.tight{ grid-template-columns: 1fr 1.05fr; align-items: center; }
 
 .panel{
   background: var(--panel);
   border: 1px solid var(--grid);
   border-radius: 4px;
-  padding: 1.25rem 1.4rem;
+  padding: .95rem 1.1rem;
   display: grid;
-  gap: .5rem;
+  gap: .45rem;
   align-content: start;
 }
 .panel h3{
-  font-size: .9rem;
+  font-size: .86rem;
   font-family: var(--font-mono);
   font-weight: 500;
   letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--amber);
 }
-.panel p{ margin: 0; font-size: .95rem; color: var(--chalk); }
+.panel p{ margin: 0; font-size: .88rem; line-height: 1.45; color: var(--chalk); }
 .panel--warn{ border-color: var(--fail); }
 .panel--warn h3{ color: var(--fail); }
 
 .stat-row{ display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--grid); border: 1px solid var(--grid); }
-.stat{ background: var(--ink); padding: .95rem 1.05rem; display: grid; gap: .25rem; }
+.stat{ background: var(--ink); padding: .7rem .85rem; display: grid; gap: .2rem; }
 .stat--bad .n{ color: var(--fail); }
 .stat--ok .n{ color: var(--pass); }
-.stat .n{ font-family: var(--font-mono); font-size: 1.85rem; color: var(--bright); line-height: 1; font-variant-numeric: tabular-nums; }
-.stat .l{ font-size: .76rem; color: var(--slate); line-height: 1.3; }
+.stat .n{ font-family: var(--font-mono); font-size: 1.55rem; color: var(--bright); line-height: 1; font-variant-numeric: tabular-nums; }
+.stat .l{ font-size: .74rem; color: var(--slate); line-height: 1.28; }
 
-ol.steps{ margin: 0; padding: 0; list-style: none; display: grid; gap: .6rem; counter-reset: s; }
+ol.steps{ margin: 0; padding: 0; list-style: none; display: grid; gap: .45rem; counter-reset: s; }
 ol.steps li{
   counter-increment: s;
   display: grid;
-  grid-template-columns: 2rem 1fr;
-  gap: .85rem;
+  grid-template-columns: 1.8rem 1fr;
+  gap: .75rem;
   align-items: baseline;
-  font-size: .96rem;
+  font-size: .9rem;
+  line-height: 1.42;
   color: var(--chalk);
 }
 ol.steps li::before{
   content: counter(s, decimal-leading-zero);
   font-family: var(--font-mono);
-  font-size: .82rem;
+  font-size: .78rem;
   color: var(--amber);
   border: 1px solid var(--amber-dk);
   border-radius: 3px;
-  padding: .12rem 0;
+  padding: .1rem 0;
   text-align: center;
 }
 ol.steps li b{ color: var(--bright); font-weight: 500; }
 
-ul.list{ margin: 0; padding: 0; list-style: none; display: grid; gap: .5rem; }
-ul.list li{ display: grid; grid-template-columns: 1rem 1fr; gap: .8rem; font-size: .96rem; color: var(--chalk); }
+ul.list{ margin: 0; padding: 0; list-style: none; display: grid; gap: .4rem; }
+ul.list li{ display: grid; grid-template-columns: 1rem 1fr; gap: .75rem; font-size: .9rem; line-height: 1.42; color: var(--chalk); }
 ul.list li::before{ content: "\2014"; color: var(--amber); }
 ul.list li b{ color: var(--bright); font-weight: 500; }
 
-table.t{ width: 100%; border-collapse: collapse; font-size: .95rem; }
+table.t{ width: 100%; border-collapse: collapse; font-size: .9rem; }
 table.t th{
   text-align: left;
   font-family: var(--font-mono);
   font-weight: 500;
-  font-size: .7rem;
+  font-size: .68rem;
   letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--slate);
-  padding: 0 1rem .65rem 0;
+  padding: 0 1rem .55rem 0;
   border-bottom: 1px solid var(--grid-2);
 }
-table.t td{ padding: .65rem 1rem .65rem 0; border-bottom: 1px solid var(--grid); color: var(--chalk); vertical-align: top; }
+table.t td{ padding: .5rem 1rem .5rem 0; border-bottom: 1px solid var(--grid); color: var(--chalk); vertical-align: top; }
 table.t td:first-child{ color: var(--bright); white-space: nowrap; }
 
 .well{
@@ -205,22 +226,23 @@ table.t td:first-child{ color: var(--bright); white-space: nowrap; }
   border: 1px solid var(--grid);
   border-left: 2px solid var(--amber);
   border-radius: 3px;
-  padding: 1rem 1.25rem;
+  padding: .9rem 1.1rem;
   font-family: var(--font-mono);
-  font-size: .86rem;
-  line-height: 1.7;
+  font-size: .78rem;
+  line-height: 1.6;
   color: var(--chalk);
-  white-space: pre-wrap;
+  white-space: pre;
+  overflow-x: auto;
 }
 .well .k{ color: var(--slate); }
 .well .pass{ color: var(--pass); }
 .well .fail{ color: var(--fail); }
 .well .am{ color: var(--amber); }
 
-.chips{ display: flex; flex-wrap: wrap; gap: .45rem; }
-.chip{ font-family: var(--font-mono); font-size: .76rem; padding: .28rem .55rem; border: 1px solid var(--grid-2); border-radius: 3px; color: var(--slate); }
+.chips{ display: flex; flex-wrap: wrap; gap: .4rem; }
+.chip{ font-family: var(--font-mono); font-size: .72rem; padding: .25rem .5rem; border: 1px solid var(--grid-2); border-radius: 3px; color: var(--slate); }
 
-.flow{ font-family: var(--font-mono); font-size: .9rem; color: var(--slate); line-height: 2; }
+.flow{ font-family: var(--font-mono); font-size: .84rem; color: var(--slate); line-height: 1.9; }
 .flow b{ color: var(--amber); font-weight: 400; }
 
 .clip-cue{
@@ -247,7 +269,7 @@ table.t td:first-child{ color: var(--bright); white-space: nowrap; }
 .term__bar{ display: flex; align-items: center; gap: .45rem; padding: .5rem .85rem; background: var(--panel); border-bottom: 1px solid var(--grid); }
 .term__dot{ width: .58rem; height: .58rem; border-radius: 50%; background: var(--grid-2); flex: none; }
 .term__title{ font-family: var(--font-mono); font-size: .72rem; color: var(--slate); margin-left: .45rem; letter-spacing: .02em; }
-.term__body{ margin: 0; padding: 1rem 1.2rem; font-family: var(--font-mono); font-size: .8rem; line-height: 1.62; color: var(--chalk); white-space: pre; overflow-x: auto; }
+.term__body{ margin: 0; padding: .85rem 1.1rem; font-family: var(--font-mono); font-size: .72rem; line-height: 1.5; color: var(--chalk); white-space: pre; overflow-x: auto; }
 .term__body .ln{ display: block; opacity: 0; }
 .term__body .ln.on{ opacity: 1; }
 .term.done .term__body .ln{ opacity: 1; }
@@ -265,8 +287,8 @@ table.t td:first-child{ color: var(--bright); white-space: nowrap; }
 @media (prefers-reduced-motion: reduce){ .term__body .ln{ opacity: 1; } .term.playing .term__cur{ animation: none; } }
 
 /* ---------- diagrams ---------- */
-figure.dia{ margin: 0; display: grid; gap: .7rem; justify-items: center; }
-figure.dia svg{ width: 100%; max-width: 340px; height: auto; overflow: visible; }
+figure.dia{ margin: 0; display: grid; gap: .6rem; justify-items: center; align-content: center; }
+figure.dia svg{ width: 100%; max-width: 300px; max-height: 300px; height: auto; overflow: visible; }
 .dia text{ font-family: var(--font-mono); fill: var(--slate); }
 .dia .lbl-hi{ fill: var(--bright); }
 .dia .ring{ fill: none; stroke: var(--grid-2); stroke-width: 1; }
@@ -365,9 +387,9 @@ figure.dia.wide svg{ max-width: 600px; }
 
 @media print{
   body{ overflow: visible; }
-  .deck{ position: static; }
+  .deck{ position: static; display: block; }
+  .stage-wrap{ width: auto; height: auto; transform: none !important; }
   .slide{ position: static; display: grid !important; min-height: 100vh; page-break-after: always; border-bottom: 1px solid #333; }
-  .stage{ transform: none !important; }
   .rail, .nav, .hint{ display: none; }
   .notes{ position: static; transform: none; max-height: none; }
 }
@@ -376,13 +398,15 @@ figure.dia.wide svg{ max-width: 600px; }
 <div class="rail" id="rail"></div>
 
 <main class="deck" id="deck">
+ <div class="stage-wrap" id="stageWrap">
 
   <!-- 01 · TITLE -->
   <section class="slide"><div class="stage">
     <p class="eyebrow">API World + CloudX + AI TechWorld 2026 · Workshop Stage A</p>
-    <h1 class="statement">Securing AI-Generated APIs<br><span class="lo">at the speed of AI</span></h1>
+    <h1 class="statement"><span class="nowrap">Securing AI-Generated APIs</span><br><span class="lo">at the speed of AI</span></h1>
+    <p class="byline">Deepankar Das&nbsp;&nbsp;<span class="role">CEO &amp; Founder, Cyberhead AI</span></p>
     <p class="lede">Risk-aware test selection, the Agentic Development Model, and closure discipline &mdash; a verification system that keeps pace with code generation.</p>
-    <p class="cap">Sep 1 2026 · 12:00&ndash;12:50 PDT&nbsp;&nbsp;/&nbsp;&nbsp;Deepankar Das &mdash; CEO &amp; Founder, Cyberhead AI&nbsp;&nbsp;/&nbsp;&nbsp;~38 min · demo clips · Q&amp;A</p>
+    <p class="cap">Sep 1 2026 · 12:00&ndash;12:50 PDT&nbsp;&nbsp;/&nbsp;&nbsp;~38 min · demo clips · Q&amp;A</p>
   </div></section>
 
   <!-- 02 · COLD OPEN -->
@@ -450,13 +474,13 @@ figure.dia.wide svg{ max-width: 600px; }
   <section class="slide"><div class="stage">
     <p class="eyebrow">The operating model</p>
     <h2>The Agentic Development Model</h2>
-    <p class="lede">Not a testing stage bolted onto a pipeline. An operating model with one load-bearing mechanism at its center and the others arranged around it &mdash; in the order a single diff flows through them.</p>
+    <p class="lede">An operating model, not a testing stage &mdash; one load-bearing mechanism at the center, the others arranged around it in the order a diff flows through them.</p>
     <ol class="steps">
-      <li><b>Cross-Model Convergence Review</b> &mdash; a three-member cross-family LLM jury that reviews every agent-authored diff and converges the findings into one owned action list.</li>
-      <li><b>RADAR</b> &mdash; the risk-aware test selector that keeps the loop economically viable, binding every test to a false-negative-rate target.</li>
-      <li><b>The Convergence Loop</b> &mdash; the eight-step process that drives residual defects to zero before the diff reaches human review.</li>
+      <li><b>Cross-Model Convergence Review</b> &mdash; a three-member cross-family LLM jury; findings converge into one owned action list.</li>
+      <li><b>RADAR</b> &mdash; the risk-aware test selector; every test bound to a false-negative-rate target.</li>
+      <li><b>The Convergence Loop</b> &mdash; eight steps that drive residual defects to zero before human review.</li>
     </ol>
-    <p class="kicker">Above the pipeline: a <span style="color:var(--amber)">commit-attested gate</span> that admits only diffs whose receipts prove the loop terminated cleanly on that specific change.</p>
+    <p class="kicker">Above the pipeline: a <span style="color:var(--amber)">commit-attested gate</span> that admits only diffs whose receipts prove the loop terminated cleanly.</p>
   </div></section>
 
   <!-- 09 · ACT IIa -->
@@ -885,9 +909,9 @@ Verdict:      <span class="pass">PASS</span>
     <p class="eyebrow">Three things</p>
     <h2>If you can't name your guardrails, you're not doing AI governance.</h2>
     <ol class="steps">
-      <li><b>The layered model</b> &mdash; fast per-commit gates catch most regressions in ~3 min; RADAR impact-selects the risk-weighted subset; the Convergence Loop drives residual defects to zero before human review.</li>
-      <li><b>The split</b> &mdash; CI: deterministic, fast, no infrastructure (whitebox). Nightly: live server, full HTTP stack, full attack simulation (blackbox). Know which is which and why.</li>
-      <li><b>Closure discipline</b> &mdash; every test carries a false-negative-rate target; every critical invariant has a mandatory floor; every commit carries a receipt bound to its exact diff; every fix states what would prove it wrong.</li>
+      <li><b>The layered model</b> &mdash; fast gates (~3 min) catch most regressions; RADAR impact-selects the rest; the Convergence Loop drives residuals to zero before review.</li>
+      <li><b>The split</b> &mdash; CI = whitebox: deterministic, fast, no infrastructure. Nightly = blackbox: live server, full attack simulation. Know which is which.</li>
+      <li><b>Closure discipline</b> &mdash; every test an FNR target, every critical invariant a mandatory floor, every commit a receipt bound to its diff, every fix a statement of what would prove it wrong.</li>
     </ol>
   </div></section>
 
@@ -900,6 +924,7 @@ Verdict:      <span class="pass">PASS</span>
     <p class="lede">What sensitive API surface would you pilot first?</p>
   </div></section>
 
+ </div>
 </main>
 
 <p class="hint" id="hint">&larr; &rarr; navigate &middot; <b>S</b> speaker notes &middot; <b>F</b> fullscreen</p>
@@ -977,24 +1002,12 @@ Verdict:      <span class="pass">PASS</span>
     "Resources and Q&A. Start with one repo, one invariant suite, one run artifact, one class of change. QR to agenticfactory.ai and the Substack three-part series (diagnosis · manual · multi-agent coordination). Open with the pilot-surface question.\n\nQ&A PREP —\n'why not run the full suite every change?': too slow, too weakly tied to the precise change; reserve it for milestones.\n'how do you know the selected corpus is sufficient?': reachability + mandatory floors + risk-mandated tests + milestone validation + a learning loop that turns escapes into new rules.\n'does this replace pen testing?': no — it makes it continuous and change-aware; the human engagement stays.\n'works without multiple agents?': yes — core is layered verification, impact selection, run artifacts, closure; cross-model review is the extra independent-challenge path.\n'what stays human?': not a list of things you refuse to automate — automate the work, but keep a human review-and-approve step on risk acceptance, business authorization, customer-impact trade-offs, ambiguous incident calls, and final approval of high-blast-radius or irreversible actions."
   ];
 
-  function fit(){
-    var slide = slides[idx];
-    var stage = slide.querySelector('.stage');
-    stage.style.transform = 'none';
-    stage.style.setProperty('--k', 1);
-    var cs = getComputedStyle(slide);
-    var padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-    var padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
-    var availW = slide.clientWidth - padX;
-    var availH = slide.clientHeight - padY;
-    var natW = stage.offsetWidth;
-    var natH = stage.offsetHeight;
-    if (!natW || !natH){ stage.style.transform = ''; return; }
-    var k = Math.min(1, availW / natW, availH / natH);
-    if (!isFinite(k) || k <= 0) k = 1;
-    k = Math.max(k, 0.4);
-    stage.style.setProperty('--k', k);
-    stage.style.transform = 'scale(' + k + ')';
+  var stageWrap = document.getElementById('stageWrap');
+
+  // Scale the whole 1280x720 canvas as one unit to fit the viewport.
+  function scaleDeck(){
+    var s = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    stageWrap.style.transform = 'scale(' + s + ')';
   }
 
   function show(n){
@@ -1006,7 +1019,6 @@ Verdict:      <span class="pass">PASS</span>
     next.disabled = idx === total - 1;
     if (notes.classList.contains('open')) fillNotes();
     slides[idx].querySelectorAll('.term').forEach(function(t){ if (t._reset) t._reset(); });
-    requestAnimationFrame(function(){ fit(); requestAnimationFrame(fit); });
     try { localStorage.setItem(LS, JSON.stringify({ i: idx, n: notes.classList.contains('open') })); } catch(e){}
   }
 
@@ -1076,7 +1088,7 @@ Verdict:      <span class="pass">PASS</span>
     fsBtn.innerHTML = on ? FS_OUT : FS_IN;
     fsBtn.setAttribute('aria-label', on ? 'Exit full screen' : 'Enter full screen');
     fsBtn.title = (on ? 'Exit full screen' : 'Full screen') + ' (F)';
-    requestAnimationFrame(fit);
+    requestAnimationFrame(scaleDeck);
   }
   document.addEventListener('fullscreenchange', syncFs);
   document.addEventListener('webkitfullscreenchange', syncFs);
@@ -1108,10 +1120,11 @@ Verdict:      <span class="pass">PASS</span>
     if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) show(idx + (dx < 0 ? 1 : -1));
   });
 
-  var rt;
-  window.addEventListener('resize', function(){ clearTimeout(rt); rt = setTimeout(fit, 120); });
+  window.addEventListener('resize', scaleDeck);
+  window.addEventListener('orientationchange', scaleDeck);
+  scaleDeck();
   initTerminals();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(scaleDeck);
   setTimeout(function(){ hint.classList.add('gone'); }, 7000);
 
   var start = 0;

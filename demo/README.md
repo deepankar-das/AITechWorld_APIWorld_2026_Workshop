@@ -28,6 +28,9 @@ demo/
   run-folder/          produced selections, run.json, receipts   (gitignored)
 ```
 
+For the presenter walkthrough — beats, what to say, expected output, timing,
+and fallbacks — see [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md).
+
 ## Stage runbook
 
 ```bash

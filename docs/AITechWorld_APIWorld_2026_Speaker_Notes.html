@@ -1,0 +1,354 @@
+<title>Speaker Notes — Securing AI-Generated APIs</title>
+<meta name="description" content="Presenter-notes companion for the API World 2026 workshop deck — advance it on an iPad in parallel with the main deck.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+:root{
+  color-scheme: dark;
+  --ink:      #0B0E15;
+  --panel:    #131824;
+  --sunken:   #070A10;
+  --grid:     #1F2836;
+  --grid-2:   #2A3547;
+  --slate:    #949DAE;
+  --slate-dim:#6A7486;
+  --chalk:    #EBEDF1;
+  --bright:   #FCFDFF;
+  --amber:    #E6A23C;
+  --pass:     #58B98A;
+  --fail:     #E15540;
+  --font-display: "Saira", system-ui, sans-serif;
+  --font-body:    "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --fs: 1;
+}
+*{ box-sizing: border-box; }
+html, body{ height: 100%; }
+body{
+  margin: 0;
+  background: var(--ink);
+  color: var(--chalk);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+.wrap{
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* ---------- header ---------- */
+.hdr{
+  display: flex; align-items: center; gap: 1rem;
+  padding: .9rem 1.4rem;
+  border-bottom: 1px solid var(--grid);
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  letter-spacing: .04em;
+}
+.hdr__pos{ color: var(--bright); font-weight: 500; }
+.hdr__sec{ color: var(--amber); text-transform: uppercase; letter-spacing: .16em; font-size: .72rem; flex: 1; }
+.hdr__clock{
+  color: var(--slate); border: 1px solid var(--grid-2); border-radius: 999px;
+  padding: .28rem .8rem; cursor: pointer; user-select: none; font-variant-numeric: tabular-nums;
+  min-width: 6.5ch; text-align: center;
+}
+.hdr__clock.run{ color: var(--bright); border-color: var(--slate-dim); }
+.hdr__clock.over{ color: var(--fail); border-color: var(--fail); }
+
+/* ---------- card ---------- */
+.card{
+  position: relative;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: clamp(1.4rem, 4vw, 3rem) clamp(1.4rem, 5vw, 4rem);
+  display: flex; flex-direction: column; gap: 1.1rem;
+}
+.card__eyebrow{
+  font-family: var(--font-mono); font-size: calc(.8rem * var(--fs));
+  color: var(--slate-dim); letter-spacing: .04em;
+}
+.card__title{
+  font-family: var(--font-display); font-weight: 600;
+  font-size: calc(1.9rem * var(--fs)); line-height: 1.15;
+  color: var(--bright); margin: 0; text-wrap: balance;
+}
+.card__note{
+  font-size: calc(1.32rem * var(--fs));
+  line-height: 1.62;
+  color: var(--chalk);
+  white-space: pre-wrap;
+  max-width: 62ch;
+}
+.card__note code{
+  font-family: var(--font-mono);
+  font-size: .88em;
+  color: var(--amber);
+  background: var(--sunken);
+  border: 1px solid var(--grid);
+  border-radius: 3px;
+  padding: .05em .35em;
+  white-space: pre-wrap;
+}
+.card__note .q{ color: var(--bright); font-weight: 600; }
+.card__next{
+  margin-top: .6rem; padding-top: 1rem; border-top: 1px solid var(--grid);
+  font-size: calc(1rem * var(--fs)); color: var(--slate);
+}
+.card__next b{ color: var(--slate); font-weight: 400; font-family: var(--font-mono); font-size: .82em; letter-spacing: .12em; text-transform: uppercase; display: block; margin-bottom: .25rem; }
+.card__next span{ color: var(--chalk); }
+
+/* invisible tap zones for prev / next (iPad thumb reach) */
+.zone{ position: absolute; top: 0; bottom: 0; width: 33%; z-index: 5; -webkit-tap-highlight-color: transparent; }
+.zone--prev{ left: 0; }
+.zone--next{ right: 0; }
+
+/* ---------- controls ---------- */
+.ctl{
+  display: flex; align-items: center; gap: .5rem;
+  padding: .8rem 1.2rem calc(.8rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--grid);
+}
+.ctl button{
+  appearance: none;
+  font-family: var(--font-mono); font-size: .9rem; letter-spacing: .06em;
+  background: transparent; border: 1px solid var(--grid-2); color: var(--chalk);
+  border-radius: 8px; padding: .7rem 1rem; cursor: pointer; min-height: 44px;
+  transition: border-color .12s, background .12s, color .12s;
+}
+.ctl button:hover{ border-color: var(--amber); color: var(--amber); }
+.ctl button:active{ background: color-mix(in srgb, var(--amber) 16%, transparent); }
+.ctl button:disabled{ opacity: .3; }
+.ctl .grow{ flex: 1; }
+.ctl .nav-btn{ font-weight: 500; padding-inline: 1.4rem; }
+.ctl .sz{ width: 44px; text-align: center; padding-inline: 0; }
+
+:focus-visible{ outline: 2px solid var(--amber); outline-offset: 2px; }
+
+@media (max-width: 640px){
+  .card__note{ font-size: calc(1.18rem * var(--fs)); }
+  .card__title{ font-size: calc(1.55rem * var(--fs)); }
+}
+</style>
+
+<div class="wrap">
+  <div class="hdr">
+    <span class="hdr__pos" id="pos">01 / 38</span>
+    <span class="hdr__sec" id="sec"></span>
+    <span class="hdr__clock" id="clock" role="button" tabindex="0" title="Tap to start / reset the session timer">00:00</span>
+  </div>
+
+  <main class="card" id="card">
+    <div class="zone zone--prev" id="zPrev" aria-label="Previous"></div>
+    <div class="zone zone--next" id="zNext" aria-label="Next"></div>
+    <div class="card__eyebrow" id="eyebrow"></div>
+    <h2 class="card__title" id="title"></h2>
+    <div class="card__note" id="note"></div>
+    <div class="card__next" id="nextInfo"></div>
+  </main>
+
+  <div class="ctl">
+    <button class="nav-btn" id="prev">&#8249;&nbsp; prev</button>
+    <span class="grow"></span>
+    <button class="sz" id="smaller" title="Smaller text">A&minus;</button>
+    <button class="sz" id="bigger" title="Larger text">A+</button>
+    <span class="grow"></span>
+    <button class="nav-btn" id="next">next &nbsp;&#8250;</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // section label per slide, and the on-slide title (so you know which slide you're on)
+  var SEC = {};
+  [[1,2,"Open"],[3,8,"Act I · The problem"],[9,15,"Act II·a · RADAR"],
+   [16,20,"Act II·b · Convergence Loop"],[21,26,"Act II·c · Security gate"],
+   [27,33,"Act III · Closure discipline"],[34,35,"Live demo"],[36,38,"Act IV · Take home"]]
+   .forEach(function(r){ for(var i=r[0];i<=r[1];i++) SEC[i]=r[2]; });
+
+  var TITLES = [
+    "Title — Securing AI-Generated APIs",
+    "Cold open — ‘47 commits today / last pen test in March’",
+    "Act I divider — the loop never converges",
+    "The acceleration whiplash (Faros AI 2026)",
+    "Why shift-left never worked — schedule, not a quality gate",
+    "Coverage is dead at agent velocity",
+    "Gartner — 40% of agentic AI projects cancelled by 2027",
+    "The Agentic Development Model (ADM)",
+    "Act II·a divider — RADAR",
+    "Run exactly the right subset",
+    "Blast radius across seven dimensions",
+    "Every test carries a false-negative-rate target",
+    "Floors the selector may never undercut",
+    "▶ Scripted terminal — RADAR selection",
+    "The run folder is the audit trail",
+    "Act II·b divider — The Convergence Loop",
+    "Eight steps, in order",
+    "The loop the old economics could not afford",
+    "The curve replaces coverage (2,094 → 0)",
+    "▶ Scripted terminal — the loop closing (defect → fix)",
+    "Act II·c divider — the security gate: CI vs nightly",
+    "Architecture first — Enforcer’s real guarantees",
+    "Whitebox every commit · blackbox nightly",
+    "Why whitebox on commit, blackbox nightly",
+    "▶ Scripted terminal — the fast gate catches it",
+    "The catch that proves it works (quote-escaping SQLi)",
+    "Act III divider — closure discipline",
+    "A failure is not resolved because a later run turns green",
+    "Cross-Model Convergence Review — three families, no vote",
+    "The research — why cross-family, not a bigger judge",
+    "A diff that no longer matches its receipt cannot pass",
+    "‘Works’ is not a test",
+    "Automate the work. Keep the sign-off human. (Ford)",
+    "Live demo — setup (one AI-generated PR against Enforcer)",
+    "Live demo — the runbook",
+    "Act IV divider — take home",
+    "Three things",
+    "Q&A — start small"
+  ];
+
+  var NOTES = [
+    "Open flat. Engineering and verification session, not a product pitch. The problem: agents now generate API code faster than conventional testing and review can establish whether it is safe to ship. Not whether agents can write an endpoint — they can. What happens next.",
+    "Cold open. Let the numbers land before you speak. The question is rhetorical — the rest of the talk answers it. ~40 seconds, then move.",
+    "Act I. The divergence thesis: the naive loop lets new bugs land faster than old ones close. AI did not cause this — it accelerated a methodology failure that already existed in human-only teams.",
+    "Faros AI 2026 telemetry. Point at the two green stats, then the wall of red. ‘Throughput measures what was shipped, not what survived.’ Land the quote and pause.",
+    "Twenty years of shift-left promises. The reason it failed is structural: the pipeline terminated on a calendar. Sprints ended, code shipped with known defects. Set up the Convergence Loop as the thing that changes the exit condition.",
+    "The two failure modes are the same failure: no defensible middle. Repeat ‘smallest credible corpus’ — not ‘smallest set.’ Bridge to RADAR.",
+    "Gartner, June 2026. Say it once. The cancellations are a methodology problem — convergence is a system property, not something a better prompt buys. Methodology first, capability second.",
+    "Name all three primitives once, as a unit, in diff-flow order. The audience now has the vocabulary. The commit-attested gate sits above the pipeline; the delivery dashboard rolls per-diff work up to the roadmap.",
+    "Act II·a divider. Let the sweep run for a beat. RADAR = Risk-Aware Dependency Analysis for Rapid Verification. Deepest section — slow down.",
+    "The core claim: run exactly the right subset, with a defensible argument for sufficiency, and floors nothing can undercut. Contrast with a file-based selector, which misses indirect risk — a cache key turning a correct query into a cross-tenant leak.",
+    "Walk the seven dimensions, pointing at each ring. The output is a risk-weighted list where each test carries its reason and its dimension. That legibility is what makes the selection auditable.",
+    "The concept no other framework names. A false negative is a test that passes while the code is broken. Coverage measures what a test touches; FNR measures what it catches. If a test drifts above its target, RADAR flags the test, not the code.",
+    "Read the four floors slowly — the slide the security audience is waiting for. RADAR is forbidden from selecting anchor tests away. ‘Intelligence that lets a critical-invariant regression through is not welcome.’",
+    "RADAR selection, played from the real run. Hit play. `node demo/radar/select.mjs --change 01-audit-mutation` against Enforcer’s suite. Point at the [floor] tag on each row and the ‘why’ column — the selector isn’t guessing; every test carries its reason and its dimension. This change touches one file (the audit enrichment route), and it lands entirely on floor-covered surface — so the six mandatory floors alone are the corpus. You can run this genuinely live: it’s ~1s, no infrastructure.",
+    "The run folder is the audit substrate. Everything a regulator needs — not just which tests ran, but why each was chosen, its FNR target and observed rate, and the receipt hashed against the diff.",
+    "Act II·b divider. The Convergence Loop is the primitive the other two orbit. It is what makes left-shift real rather than aspirational.",
+    "Walk the eight steps as a procedure, pointing at the ring. Emphasise step 2 (two lanes — product and test code), step 5 (one-shot fixes from no-rerun logs), step 8 (clean = terminate; new issues re-enter at step 2). The dashed arc is the loop-back.",
+    "The economic argument. This loop was theoretically correct and impossible in the human-paced world. Agent velocity moved cost-per-iteration from human-days to agent-minutes. A genuine invention of the agentic era, not a rename.",
+    "Let the curve draw. 2,094 → 445 → 10 → 0 across three iterations on a multi-tenant B2B SaaS platform. The metric that replaces coverage is the shape of this curve — iterations to zero, and what resolved at each step.",
+    "The Convergence Loop closing, from the real runs. Hit play. Top half: `node demo/radar/run.mjs` on the seeded defect — 68 of 69 green, one floor red (`audit-enrich-immutability`), VERDICT FAIL, `admissible_for_merge: false`. Bottom half: `demo/scripts/apply-change.sh 02-fix` stacks the fix onto the same diff, re-run — the floor is now 3/3 (the fix ships with a counter-example), 70/70, `admissible_for_merge: true`. The receipt is hashed against the change; a diff that no longer matches its receipt cannot pass the gate. Whole cycle is ~15s live.",
+    "Act II·c divider. Take the security-expert stance hardest here. Architecture first, testing second.",
+    "What structurally cannot happen — these are Enforcer’s own design guarantees, from its architecture docs. Walk the list; each item is a class of attack removed by design, not by a test: enforcement can’t be disabled by the developer, the audit trail can’t be rewritten (this is exactly what the demo defect attacks), a raw terminal doesn’t bypass the kernel gate, local policy can only tighten, every Hub mutation is RBAC-gated, unsigned policy bundles don’t load. Then the pivot: given all that, testing’s job is to prove the guarantees hold on every change.",
+    "The CI/nightly split. Whitebox categories: SQLi patterns, XSS, secret leakage, auth-coverage gaps, unsafe shell, container posture, dependency risk. Blackbox: headers, method allowlists, oversized payloads, auth enforcement, brute-force, path traversal, CORS, cookies. Say ‘about seventy-five checks’ at most once; do not read counts off the slide.",
+    "Why the split is by cadence, not importance. Whitebox is pattern-matching against source — deterministic, seconds, no infra. Blackbox needs a live server — minutes of spin-up and contention per commit. Nightly gives full coverage at zero developer friction.",
+    "The point of this slide: the security-shaped checks are green and the diff still gets stopped. `node demo/radar/gate-fast.mjs --change 01-audit-mutation` — G1 (tsc) PASS, G2 (secret-leak scan) PASS, G3 (touched-module tests) FAIL, FIRST FAILURE on the audit-immutability floor. The change compiles and introduces no secrets — a scanner-only gate waves it through. The invariant floor is the layer that catches a tamper-evidence regression. Run it live (~6s) or play the panel.",
+    "The catch that proves it works. One analytics query used quote-escaping instead of parameterization with real user input — not exploitable as configured, but the one copy-paste seed for a future real injection. Fixed, and the finding class is now a permanent regression test.",
+    "Act III divider. A dashboard full of green does not mean the test system is honest. Conceptual transition — slow down.",
+    "The four requirements are a real sequence — hence numbered. Preserve the artifact, investigate the first failure in stable order, add a counter-example for the class, re-verify cross-agent. Rerunning until green is not closure.",
+    "The jury. A same-family reviewer inherits the same blind spots as the code. No majority vote — findings converge to one owned action list. Families are A/B/C on the diagram; the rotation in practice is Claude reviews GPT, GPT reviews Gemini, Gemini reviews Claude, or equivalent. The cross-model handoffs are observed behaviour, not a fixed taxonomy — the taxonomy paper is still in preparation.",
+    "The research backs the shape. Diversity-preserving aggregation captures ~95% of the ensemble ceiling; naive voting captures almost none. A three-family panel beat a single larger judge at ~1/7 cost. Cross-family review on secure code: up to 47% better. Cite the arXiv numbers precisely.",
+    "The commit-attested gate. Nothing in most repos binds a passing run to the diff that shipped. The gate admits a commit only if its trailer carries a receipt whose recorded diff-hash matches the staged diff and whose verdict is a pass. Local hook plus independent server-side re-verify. Receipt lives next to the code under a team-owned retention policy.",
+    "‘Works’ is not a test. Walk the table. Each left cell is a story the agent believes; each right cell is the evidence that could disprove it. Preview: the demo shows a cache-key failure and its counter-example.",
+    "The human checkpoint. Frame this as ‘automate the work, keep the sign-off human’ — NOT ‘we refuse to automate.’ The pipeline does the repeatable coverage and produces the evidence; a human still decides on the calls that carry liability — risk acceptance, business authorization, customer-impact trade-offs, final approval of a high-blast-radius or irreversible action. Separately, some OWASP WSTG testing (recon, timing, workflow bypass, manual business logic) needs human creativity — the suite reports the delta since the last engagement, the engagement finds what a script wouldn’t try; both run. Close on Ford: it automated quality inspection and cut headcount to save money, the results weren’t good enough (cost billions), and it rehired ~350 veteran engineers — internally ‘gray beards’ — whose job is mentoring juniors and rebuilding the training-data pipelines feeding the AI. Ford topped J.D. Power’s 2026 U.S. Initial Quality Study, its first #1 since 2010. The lesson isn’t ‘AI failed’ — it’s that the experienced people left before their judgment was encoded, so the tools amplified weak inputs instead of catching design flaws. Source: Assembly Magazine, ‘Ford Rehires Veteran Engineers to Improve AI, Vehicle Quality’ (June 2026); also covered by Fox Business, TNW, Forbes.",
+    "Demo setup. The target is Enforcer itself — the security & policy control plane this whole repo is. The AI-generated PR is a plausible refactor: ‘the pending audit event already has the full action context, so appending a separate enrichment row is redundant — just fill observed_effect in on the pending event.’ It touches one file, compiles clean, no secrets, and every unit test that doesn’t call the enrichment handler stays green. What it breaks: the audit trail’s tamper-evidence — an event, once written, is never mutated. Runs in ~7s, no Postgres, no daemon.",
+    "The full runbook — run it live from the repo (~30s end to end) or read it off this slide.\n\n  node demo/radar/gate-fast.mjs                      # clean baseline — G1 G2 G3 PASS\n  demo/scripts/apply-change.sh 01-audit-mutation     # the AI-generated PR lands\n  node demo/radar/gate-fast.mjs --change 01-audit-mutation   # G1 PASS · G2 PASS · G3 FAIL\n  node demo/radar/select.mjs   --change 01-audit-mutation    # 6 floors, reason + dimension each\n  node demo/radar/run.mjs                            # VERDICT FAIL · FIRST FAILURE · admissible_for_merge: false\n  demo/scripts/apply-change.sh 02-fix                # fix + counter-example, stacked on the diff\n  node demo/radar/run.mjs                            # VERDICT PASS 70/70 · receipt admissible_for_merge: true\n  demo/scripts/revert.sh                             # unwind both — clean tree\n\nKEEP: the [floor] distinction on select, the FIRST FAILURE line, admissible false→true, the receipt is bound to the change hash.\nCUT IF TIGHT: the standalone gate-fast baseline; the select step (mention it, don’t run it).\nFALLBACK: slides 14 / 20 / 25 carry the captured output — hit play.",
+    "Act IV divider. Short.",
+    "Three photographable points. ‘If you can’t name your guardrails, you’re not doing AI governance — you’re funding next year’s cancelled project.’ Land each numbered item, then stop.",
+    "Resources and Q&A. Start with one repo, one invariant suite, one run artifact, one class of change. QR to agenticfactory.ai and the Substack three-part series (diagnosis · manual · multi-agent coordination). Open with the pilot-surface question.\n\nQ&A PREP —\n‘why not run the full suite every change?’: too slow, too weakly tied to the precise change; reserve it for milestones.\n‘how do you know the selected corpus is sufficient?’: reachability + mandatory floors + risk-mandated tests + milestone validation + a learning loop that turns escapes into new rules.\n‘does this replace pen testing?’: no — it makes it continuous and change-aware; the human engagement stays.\n‘works without multiple agents?’: yes — core is layered verification, impact selection, run artifacts, closure; cross-model review is the extra independent-challenge path.\n‘what stays human?’: not a list of things you refuse to automate — automate the work, but keep a human review-and-approve step on risk acceptance, business authorization, customer-impact trade-offs, ambiguous incident calls, and final approval of high-blast-radius or irreversible actions."
+  ];
+
+  var total = NOTES.length;
+  var LS = 'adm-notes-v1';
+  var idx = 0;
+
+  var pos = document.getElementById('pos');
+  var sec = document.getElementById('sec');
+  var eyebrow = document.getElementById('eyebrow');
+  var titleEl = document.getElementById('title');
+  var noteEl = document.getElementById('note');
+  var nextInfo = document.getElementById('nextInfo');
+  var card = document.getElementById('card');
+  var prevBtn = document.getElementById('prev');
+  var nextBtn = document.getElementById('next');
+
+  function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmtNote(s){
+    return esc(s)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/‘([^’]{1,60}\?)’/g, '<span class="q">‘$1’</span>');
+  }
+
+  function render(){
+    var n = idx + 1;
+    pos.textContent = String(n).padStart(2,'0') + ' / ' + total;
+    sec.textContent = SEC[n] || '';
+    eyebrow.textContent = 'Slide ' + n + '  —  ' + (SEC[n] || '');
+    titleEl.textContent = TITLES[idx] || ('Slide ' + n);
+    noteEl.innerHTML = fmtNote(NOTES[idx] || '—');
+    if (idx + 1 < total){
+      nextInfo.innerHTML = '<b>Next</b><span>' + esc(TITLES[idx + 1]) + '</span>';
+      nextInfo.style.display = '';
+    } else {
+      nextInfo.style.display = 'none';
+    }
+    prevBtn.disabled = idx === 0;
+    nextBtn.disabled = idx === total - 1;
+    card.scrollTop = 0;
+    try { localStorage.setItem(LS, JSON.stringify({ i: idx, fs: getFs() })); } catch(e){}
+  }
+
+  function go(d){ idx = Math.max(0, Math.min(total - 1, idx + d)); render(); if(!clock.running) startClock(); }
+
+  prevBtn.addEventListener('click', function(){ go(-1); });
+  nextBtn.addEventListener('click', function(){ go(1); });
+  document.getElementById('zPrev').addEventListener('click', function(){ go(-1); });
+  document.getElementById('zNext').addEventListener('click', function(){ go(1); });
+
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown' || k === ' '){ e.preventDefault(); go(1); }
+    else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp'){ e.preventDefault(); go(-1); }
+    else if (k === 'Home'){ e.preventDefault(); idx = 0; render(); }
+    else if (k === 'End'){ e.preventDefault(); idx = total - 1; render(); }
+  });
+
+  // ---- font size ----
+  function getFs(){ return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--fs')) || 1; }
+  function setFs(v){ v = Math.max(0.8, Math.min(1.7, v)); document.documentElement.style.setProperty('--fs', v.toFixed(2)); try { var s = JSON.parse(localStorage.getItem(LS) || '{}'); s.fs = v; localStorage.setItem(LS, JSON.stringify(s)); } catch(e){} }
+  document.getElementById('bigger').addEventListener('click', function(){ setFs(getFs() + 0.1); });
+  document.getElementById('smaller').addEventListener('click', function(){ setFs(getFs() - 0.1); });
+
+  // ---- session timer ----
+  var clock = { el: document.getElementById('clock'), start: 0, running: false, tid: 0 };
+  function tick(){
+    var s = Math.floor((Date.now() - clock.start) / 1000);
+    var m = Math.floor(s / 60);
+    clock.el.textContent = String(m).padStart(2,'0') + ':' + String(s % 60).padStart(2,'0');
+    clock.el.classList.toggle('over', m >= 45);
+  }
+  function startClock(){
+    clock.start = Date.now(); clock.running = true;
+    clock.el.classList.add('run');
+    clock.tid = setInterval(tick, 1000); tick();
+  }
+  function resetClock(){
+    clearInterval(clock.tid); clock.running = false;
+    clock.el.classList.remove('run','over');
+    clock.el.textContent = '00:00';
+  }
+  clock.el.addEventListener('click', function(){ clock.running ? resetClock() : startClock(); });
+
+  // ---- restore ----
+  try {
+    var saved = JSON.parse(localStorage.getItem(LS) || '{}');
+    if (typeof saved.fs === 'number') document.documentElement.style.setProperty('--fs', saved.fs.toFixed(2));
+    if (typeof saved.i === 'number' && saved.i >= 0 && saved.i < total) idx = saved.i;
+  } catch(e){}
+
+  render();
+})();
+</script>

@@ -1,0 +1,213 @@
+# Live demo script — the Enforcer convergence run
+
+The ~7-minute demo segment for the API World 2026 workshop. Runs against
+Enforcer's **real** Vitest suite — every PASS / FAIL on screen is genuine.
+No infrastructure: no Postgres, no Go, no daemon. Whole cycle ≈ 30 s of
+command time.
+
+Run everything from the repo root (`src/`). Font size up, one terminal,
+one editor showing `src/daemon/routes/enrich.ts`.
+
+If anything stalls: deck slides **14 / 20 / 25** carry the captured output —
+hit **play**. Do not debug live.
+
+---
+
+## Pre-flight (before the session)
+
+```bash
+cd /path/to/repo
+npm ci                        # once
+npm test                      # sanity: 152 passing, ~4s
+demo/scripts/revert.sh        # ensure a clean tree (no stale overlay)
+git status --porcelain        # expect empty
+```
+
+- [ ] `node demo/radar/gate-fast.mjs` → FAST GATE VERDICT: PASS
+- [ ] Editor open at `src/daemon/routes/enrich.ts`
+- [ ] Terminal font large; window wide enough for ~80 columns
+- [ ] Deck open at slide 34 (demo setup)
+
+---
+
+## Beat 0 — framing · ~20 s · (slide 34 on screen)
+
+> "The target here is Enforcer itself — the policy-and-audit control plane this
+> whole repo is. An agent has opened a pull request against it. One file. It
+> compiles, it introduces no secrets, and almost every unit test stays green.
+> Watch what stops it."
+
+---
+
+## Beat 1 — clean baseline · ~35 s
+
+**Type:**
+```bash
+node demo/radar/gate-fast.mjs
+```
+**Appears:**
+```
+FAST GATES · baseline
+  G1  tsc --noEmit ... PASS
+  G2  secret-leak scan ... PASS
+  G3  touched-module tests (6) ... PASS 69/69
+  FAST GATE VERDICT: PASS   6.3s
+```
+
+> "Clean tree. Three fast gates — typecheck, a secret-leak scan, and the
+> touched-module tests. All green. This is the state a good PR should preserve."
+
+---
+
+## Beat 2 — the AI-generated PR lands · ~40 s
+
+**Type:**
+```bash
+demo/scripts/apply-change.sh 01-audit-mutation
+git diff --stat
+```
+**Appears:** one file changed — `src/daemon/routes/enrich.ts`.
+
+**Show the diff in the editor.** The change replaces the append-only enrichment
+path with: *find the pending audit event, write the outcome onto it in place,
+re-store it.*
+
+> "The commit message is reasonable: 'the pending event already has the full
+> action context, so appending a second row is redundant — just fill in what
+> happened.' It reads like a tidy refactor. The response body even still returns
+> `append_only: true`."
+
+---
+
+## Beat 3 — the fast gate catches it · ~55 s · (advance deck to slide 25)
+
+**Type:**
+```bash
+node demo/radar/gate-fast.mjs --change 01-audit-mutation
+```
+**Appears:**
+```
+  G1  tsc --noEmit ... PASS
+  G2  secret-leak scan ... PASS
+  G3  touched-module tests (6)  FAIL  1 failing
+        FIRST FAILURE: tests/integration/audit-enrich-immutability.test.ts —
+        Audit Enrichment Immutability (invariant floor)
+        appends an enrichment event and leaves the original pending event byte-identical
+  FAST GATE VERDICT: FAIL   6.3s
+```
+
+> "It compiles. No secrets. A scanner-only gate would wave this through. What
+> fails is G3 — the invariant floor `audit-enrich-immutability`. The audit
+> trail's whole tamper-evidence guarantee is: an event, once written, is never
+> mutated. This change mutates it."
+
+---
+
+## Beat 4 — RADAR selection · ~45 s · (advance deck to slide 14)
+
+**Type:**
+```bash
+node demo/radar/select.mjs --change 01-audit-mutation
+```
+**Appears:** six `[floor]` rows, each with a *reason* and a *dimension*, then
+`selected corpus: 6 tests (6 mandatory floors enforced, 0 by reachability)`.
+
+> "The selector isn't guessing. Every test on the list carries the reason it
+> was pulled in and the blast-radius dimension it covers. This change touches
+> one file and it lands entirely on floor-covered surface — so the six
+> mandatory floors *are* the corpus. RADAR is forbidden from dropping any of
+> them, whatever the blast-radius math says."
+
+---
+
+## Beat 5 — the run and the verdict · ~45 s · (advance deck to slide 20)
+
+**Type:**
+```bash
+node demo/radar/run.mjs
+```
+**Appears:**
+```
+  PASS  approval-service 20/20 · mcp-gateway 12/12 · policy-engine 16/16
+  FAIL  audit-enrich-immutability 1/2
+        ↳ leaves the original pending event byte-identical
+  PASS  audit-pipeline 14/14 · rbac-regression 5/5
+  VERDICT: FAIL   68 passed, 1 failed, 69 total
+  FIRST FAILURE: audit-enrich-immutability
+  admissible_for_merge: false
+```
+
+> "Sixty-eight of sixty-nine green — and it doesn't matter. One floor red is a
+> hard stop. The run folder now has a receipt: `admissible_for_merge: false`,
+> hashed against this exact change."
+
+---
+
+## Beat 6 — the fix, stacked on the diff, re-run · ~75 s
+
+**Type:**
+```bash
+demo/scripts/apply-change.sh 02-fix
+node demo/radar/run.mjs
+```
+**Appears:**
+```
+  PASS  audit-enrich-immutability 3/3      # was 1/2 — the fix ships with a counter-example
+  VERDICT: PASS   70 passed, 0 failed
+  admissible_for_merge: true
+```
+
+> "The fix restores the append-only path — and it ships with a counter-example:
+> it freezes the original event so any in-place write is now a thrown error, not
+> a silent field change, and it proves repeated enrichment only ever appends.
+> Re-run against the same diff: seventy of seventy. The receipt flips to
+> `admissible_for_merge: true`. That's the Convergence Loop — the fix lands on
+> the diff, the corpus re-runs, the residual goes to zero before a human ever
+> looks at it."
+
+---
+
+## Beat 7 — cleanup + the line · ~25 s
+
+**Type:**
+```bash
+demo/scripts/revert.sh
+```
+
+> "Back to a clean tree. The takeaway: a tamper-evidence regression that
+> compiled clean and passed the secret scan was stopped by an invariant floor
+> the selector isn't allowed to skip — before it reached review."
+
+---
+
+## Timing budget
+
+| Beat | Target | Running |
+|---|---:|---:|
+| 0 framing | 0:20 | 0:20 |
+| 1 baseline | 0:35 | 0:55 |
+| 2 PR lands + diff | 0:40 | 1:35 |
+| 3 gate catches it | 0:55 | 2:30 |
+| 4 RADAR selection | 0:45 | 3:15 |
+| 5 run + verdict | 0:45 | 4:00 |
+| 6 fix + re-run | 1:15 | 5:15 |
+| 7 cleanup + line | 0:25 | 5:40 |
+| slack / questions | 1:20 | 7:00 |
+
+## If you're tight on time — cut in this order
+
+1. Beat 1 (the clean baseline) — mention it, don't run it.
+2. Beat 4 (`select`) — the six floors are visible on slide 14; describe, don't run.
+3. Beat 2's `git diff --stat` — just narrate the one-file change.
+
+**Never cut:** the gate FAIL with its FIRST FAILURE line (Beat 3), and the
+`admissible_for_merge: false → true` flip across Beats 5–6.
+
+## Recovery
+
+- Command hangs or errors → switch to the deck, hit **play** on the matching
+  scripted terminal (14 = select, 20 = run defect→fix, 25 = gate-fast), narrate
+  over it.
+- `apply-change.sh` refuses ("working tree is dirty") → `demo/scripts/revert.sh`,
+  then `git stash` any unrelated edits, retry.
+- Wrong overlay stuck → `demo/scripts/revert.sh` unwinds the whole stack.
