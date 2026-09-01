@@ -23,15 +23,17 @@ demo/
   changes/
     TEMPLATE/          copy to changes/<name>/ ; overlay/ holds the modified files
   scripts/
+    run-demo.sh              presenter driver — run it, press Enter per beat
     apply-change.sh <name>   copy an overlay onto the working tree
     revert.sh                restore it
   run-folder/          produced selections, run.json, receipts   (gitignored)
 ```
 
-For the presenter walkthrough — beats, what to say, expected output, timing,
-and fallbacks — see [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md).
+**Presenting?** Run `demo/scripts/run-demo.sh` and press Enter to advance each
+beat — no typing. `--auto` runs it straight through as a pre-flight check. The
+narration and expected output for every beat are in [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md).
 
-## Stage runbook
+## Stage runbook (what the driver runs)
 
 ```bash
 # 0. clean tree, floors green

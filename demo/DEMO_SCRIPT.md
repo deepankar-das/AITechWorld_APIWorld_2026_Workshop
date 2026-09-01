@@ -13,6 +13,30 @@ hit **play**. Do not debug live.
 
 ---
 
+## Run it — the driver script
+
+You don't type the commands live. Run the driver and press **Enter** to
+advance each beat:
+
+```bash
+demo/scripts/run-demo.sh
+```
+
+It walks the seven beats below, pausing for a keystroke before each command,
+printing everything verbose (the diff, the receipt JSON, `git status`).
+**Ctrl-C** at any point aborts and restores a clean tree.
+
+Pre-flight self-test — run straight through with no pauses:
+
+```bash
+demo/scripts/run-demo.sh --auto
+```
+
+The beats below are the reference: what each command shows and what to say
+over it.
+
+---
+
 ## Pre-flight (before the session)
 
 ```bash
@@ -74,8 +98,8 @@ re-store it.*
 
 > "The commit message is reasonable: 'the pending event already has the full
 > action context, so appending a second row is redundant — just fill in what
-> happened.' It reads like a tidy refactor. The response body even still returns
-> `append_only: true`."
+> happened.' It reads like a tidy refactor — one file. The response body even
+> still returns `append_only: true`."
 
 ---
 
