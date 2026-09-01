@@ -272,20 +272,21 @@ annual pen test → release regression sweep → manual review → production
 >
 > Run exactly the right subset — with a defensible argument for why it is sufficient.
 
-> Full-suite regressions on every agent-authored diff are neither fast enough to feed the loop nor cheap enough for any sane cloud budget. Skipping is what produces the bad-quality exposure that surfaces in production. RADAR is the selector that resolves both, *with declared floors no selector can undercut*.
+> RADAR earns its place on two grounds: it compresses verification time to match agent velocity, and it controls the compute and AI-infrastructure cost of running it on every diff. Full-suite regressions do neither — too slow to feed the loop, too expensive for any sane budget. Skipping tests instead is what lets bad-quality code reach production. RADAR resolves both, *with declared floors no selector can undercut*.
 
 > Not a random subset. Not just the dependency graph. A risk-weighted list of tests, each carrying the reason it was selected.
 
 ### Speaker script
 
-> RADAR's core claim: run exactly the right subset of tests, with a defensible argument for why that subset is sufficient — not a guess, an argument you could show an auditor.
+> RADAR earns its place on two grounds, and I want to state both explicitly. One: it compresses verification time to match agent velocity — a test cycle that used to take an overnight batch now has to complete in something close to real time. Two: it controls the compute and AI-infrastructure cost of running verification on every single diff — that's real cloud spend, not a hand-wave.
 >
-> Full-suite regression on every agent-authored diff is neither fast enough to feed a loop that needs to run repeatedly, nor cheap enough for any sane cloud budget. But skipping tests is exactly what lets the bad-quality exposure we saw in the Faros data reach production. RADAR is built to resolve both problems at once — with declared floors that no selector, however smart, is allowed to undercut. We'll get to those floors in a few slides.
+> A full-suite regression on every agent-authored diff does neither. It's too slow to feed a loop that needs to run repeatedly, and it's too expensive for any sane budget once you're running it on every commit from every agent. But the naive fix — skipping tests instead — is exactly what lets the bad-quality exposure we saw in the Faros data reach production. RADAR is built to resolve both the time problem and the cost problem at once, with declared floors that no selector, however smart, is allowed to undercut. We'll get to those floors in a few slides — they're what keeps the speed and cost savings from ever coming out of something critical.
 >
 > And to be clear about what RADAR is not: it's not a random subset, and it's not just a file-level dependency graph. A dependency graph misses indirect risk — a cache key can turn a perfectly correct query into a cross-tenant data leak, and no file-diff view will show you that. RADAR produces a risk-weighted list of tests, and every single one carries the reason it was selected.
 
 ### Delivery notes
 
+- State the two benefits explicitly and in order — time compression first, cost control second — before pivoting to what RADAR is not. Floors are the third leg, introduced here and detailed on slide 13.
 - Contrast explicitly with a naive file-based selector — the cache-key example is the concrete failure mode that makes "reachability, not just files changed" land.
 - ~60 seconds.
 
