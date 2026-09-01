@@ -155,6 +155,27 @@ export function runVitest(testFiles, { cwd = REPO_ROOT } = {}) {
   };
 }
 
+/**
+ * Collect-only inventory of the whole repo's test suite (no tests executed —
+ * `vitest list` just discovers files and test names). Used to show "N of
+ * TOTAL" selection counts honestly, without hardcoding a total that could
+ * drift out of date as tests are added or removed.
+ * Returns { totalFiles, totalTests, byFile: Map<relPath, testCount> }.
+ */
+export function testInventory(cwd = REPO_ROOT) {
+  const raw = execFileSync("npx", ["vitest", "list", "--json"], {
+    cwd,
+    stdio: ["ignore", "pipe", "pipe"],
+  }).toString();
+  const entries = JSON.parse(raw);
+  const byFile = new Map();
+  for (const e of entries) {
+    const rel = path.relative(cwd, e.file);
+    byFile.set(rel, (byFile.get(rel) || 0) + 1);
+  }
+  return { totalFiles: byFile.size, totalTests: entries.length, byFile };
+}
+
 export function tsc(cwd = REPO_ROOT) {
   try {
     execFileSync("npx", ["tsc", "--noEmit"], { cwd, stdio: ["ignore", "pipe", "pipe"] });

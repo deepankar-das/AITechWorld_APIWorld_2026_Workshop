@@ -127,20 +127,37 @@ node demo/radar/gate-fast.mjs --change 01-audit-mutation
 
 ---
 
-## Beat 4 — RADAR selection · ~45 s · (advance deck to slide 14)
+## Beat 3.5 — how this actually gets fixed · ~30 s
+
+> "Before we look at what runs next: in the full pipeline, a failure like this
+> doesn't go straight to a human. Several independent AI models each look at
+> it on their own — observe, analyze, propose a fix — without seeing each
+> other's answer. They then cross-review and converge on one fix. Only then
+> does the system pick which tests that fix needs to be checked against, and
+> the whole loop repeats until nothing is failing. We're skipping straight to
+> the converged fix so we can walk through the mechanics in the time we have."
+
+---
+
+## Beat 4 — RADAR selection · ~50 s · (advance deck to slide 14)
 
 **Type:**
 ```bash
 node demo/radar/select.mjs --change 01-audit-mutation
 ```
 **Appears:** six `[floor]` rows, each with a *reason* and a *dimension*, then
-`selected corpus: 6 tests (6 mandatory floors enforced, 0 by reachability)`.
+`selected corpus: 6 test files (6 mandatory floors enforced, 0 by
+reachability)`, followed by `6 of 10 test files selected (69 of 152
+individual tests in the whole suite)`.
 
 > "The selector isn't guessing. Every test on the list carries the reason it
 > was pulled in and the blast-radius dimension it covers. This change touches
 > one file and it lands entirely on floor-covered surface — so the six
 > mandatory floors *are* the corpus. RADAR is forbidden from dropping any of
-> them, whatever the blast-radius math says."
+> them, whatever the blast-radius math says. And look at the bottom line: six
+> of the repo's ten test files, about sixty-nine of its hundred fifty-two
+> individual tests. Everything else got left out on purpose, not by luck —
+> nothing about it could plausibly be touched by this change."
 
 ---
 
@@ -212,17 +229,20 @@ demo/scripts/revert.sh
 | 1 baseline | 0:35 | 0:55 |
 | 2 PR lands + diff | 0:40 | 1:35 |
 | 3 gate catches it | 0:55 | 2:30 |
-| 4 RADAR selection | 0:45 | 3:15 |
-| 5 run + verdict | 0:45 | 4:00 |
-| 6 fix + re-run | 1:15 | 5:15 |
-| 7 cleanup + line | 0:25 | 5:40 |
-| slack / questions | 1:20 | 7:00 |
+| 3.5 how the fix converges | 0:30 | 3:00 |
+| 4 RADAR selection | 0:50 | 3:50 |
+| 5 run + verdict | 0:45 | 4:35 |
+| 6 fix + re-run | 1:15 | 5:50 |
+| 7 cleanup + line | 0:25 | 6:15 |
+| slack / questions | 0:45 | 7:00 |
 
 ## If you're tight on time — cut in this order
 
 1. Beat 1 (the clean baseline) — mention it, don't run it.
-2. Beat 4 (`select`) — the six floors are visible on slide 14; describe, don't run.
-3. Beat 2's `git diff --stat` — just narrate the one-file change.
+2. Beat 3.5 (how the fix converges) — one sentence, or skip: "this gets fixed
+   by a converged, cross-reviewed AI proposal — we're jumping to that fix."
+3. Beat 4 (`select`) — the six floors are visible on slide 14; describe, don't run.
+4. Beat 2's `git diff --stat` — just narrate the one-file change.
 
 **Never cut:** the gate FAIL with its FIRST FAILURE line (Beat 3), and the
 `admissible_for_merge: false → true` flip across Beats 5–6.

@@ -140,8 +140,9 @@ say <<'EOF'
 3. First alarm       — re-run the quick checks. One of them will
                         now fail.
 4. What gets tested  — see exactly which tests were chosen to
-                        run against this change, and why each one
-                        was picked.
+                        run against this change, why each one was
+                        picked, and how that compares to the
+                        whole test suite.
 5. The full failure  — run those tests and see the precise
                         reason the change is unsafe.
 6. The fix           — apply the correction, re-run everything,
@@ -221,24 +222,46 @@ raw
 run node demo/radar/gate-fast.mjs --change 01-audit-mutation || true
 note "compiles fine, no secrets — but one test failed. That failing test exists specifically to protect the rule this change broke: a record must never be silently changed after it is written."
 
+echo "${B}  How this actually gets fixed, in the full pipeline${R}"
+say <<'EOF'
+A failure like this does not go straight to a human. In the full
+Agentic Development Model pipeline, several independent AI
+models each look at the failure on their own — each one observes
+what broke, works out why, and proposes its own fix, without
+seeing what the others propose. The models then read each
+other's proposed fixes, argue about which is right, and converge
+on a single fix. Only after they agree does the system pick the
+specific tests that fix needs to be checked against, and run
+them. If anything is still broken, the whole cycle repeats —
+observe, analyze, propose, cross-review, converge, select tests,
+run — until nothing is left failing.
+
+For this live demo, we skip straight to that already-converged
+fix (Step 6) so we can walk through the mechanics in the time we
+have. What comes next — picking which tests to run — is that
+test-selection step on its own.
+EOF
+pause
+
 # ═══════════════════════════════════════════════════════════════════════════
 # STEP 4 — What gets tested
 # ═══════════════════════════════════════════════════════════════════════════
 step "What gets tested"
 say <<'EOF'
-Before running the full set of tests, the system first decides
-which tests are actually relevant to this specific change,
-instead of blindly re-running everything every time.
+Before running any tests, the system first decides which tests
+are actually relevant to this specific change, instead of
+blindly re-running the entire test suite every time.
 
 Below is that short list. Next to each test you will see the
 reason it was chosen. Every one of these six is what we call a
 "mandatory floor" — a rule the system is never allowed to skip
-checking, no matter how small or safe a change looks.
+checking, no matter how small or safe a change looks. At the
+bottom, watch how many tests got picked out of the whole suite.
 EOF
 pause
 raw
 run node demo/radar/select.mjs --change 01-audit-mutation
-note "six tests were chosen, each with a stated reason — nothing here is a guess, and none of these six can be skipped."
+note "six tests were chosen, each with a stated reason — nothing here is a guess, and none of these six can be skipped. That is 6 of the repo's 10 test files — about 69 of its 152 individual tests. The rest weren't run because nothing about them could plausibly be affected by this change."
 
 # ═══════════════════════════════════════════════════════════════════════════
 # STEP 5 — The full failure

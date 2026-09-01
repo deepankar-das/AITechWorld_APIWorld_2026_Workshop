@@ -16,7 +16,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { C, loadChange, select, newRunId, runFolder, RUN_ROOT } from "./lib.mjs";
+import { C, loadChange, select, newRunId, runFolder, RUN_ROOT, testInventory } from "./lib.mjs";
 
 const argv = process.argv.slice(2);
 const changeName = (() => {
@@ -55,7 +55,12 @@ for (const s of selected) {
   console.log("  " + tag + pad(s.test, TESTW) + pad(s.dimension, DIMW) + C.dim(s.reason));
 }
 console.log("");
-console.log(`  selected corpus: ${C.bold(String(selected.length))} tests  ` +
+console.log(`  selected corpus: ${C.bold(String(selected.length))} test files  ` +
   C.dim(`(${floorsEnforced.length} mandatory floors enforced, ${selected.length - floorsEnforced.length} by reachability)`));
+
+const inv = testInventory();
+const selectedTestCount = selected.reduce((sum, s) => sum + (inv.byFile.get(s.test) || 0), 0);
+console.log(`  ${C.bold(String(selected.length))} of ${C.bold(String(inv.totalFiles))} test files selected  ` +
+  C.dim(`(${selectedTestCount} of ${inv.totalTests} individual tests in the whole suite)`));
 console.log(C.dim(`  selection written to demo/run-folder/${runId}/selection.json`));
 console.log("");

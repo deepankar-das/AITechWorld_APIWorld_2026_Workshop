@@ -45,6 +45,7 @@ node demo/radar/run.mjs                                  # VERDICT: PASS
 demo/scripts/apply-change.sh 01-audit-mutation
 node demo/radar/gate-fast.mjs --change 01-audit-mutation # G1/G2 PASS ... G3 FAIL
 node demo/radar/select.mjs --change 01-audit-mutation    # floors + reachability, reasons per test
+                                                           # + "6 of 10 test files (69 of 152 tests)"
 node demo/radar/run.mjs                                  # VERDICT: FAIL — FIRST FAILURE on the audit-immutability floor
 
 # 2. fix stacks on top of the diff, re-run (the Convergence Loop — no revert)
