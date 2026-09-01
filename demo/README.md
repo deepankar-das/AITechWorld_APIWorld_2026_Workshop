@@ -32,22 +32,22 @@ demo/
 
 ```bash
 # 0. clean tree, floors green
-node demo/radar/gate-fast.mjs                       # G1/G2/G3 PASS
-node demo/radar/select.mjs                          # 6 mandatory floors, clean baseline
-node demo/radar/run.mjs                             # VERDICT: PASS
+node demo/radar/gate-fast.mjs                            # G1/G2/G3 PASS
+node demo/radar/select.mjs                               # 6 mandatory floors, clean baseline
+node demo/radar/run.mjs                                  # VERDICT: PASS
 
-# 1. the AI-generated PR lands  (Stage 2 adds demo/changes/01-audit-mutation)
+# 1. the AI-generated PR lands
 demo/scripts/apply-change.sh 01-audit-mutation
-node demo/radar/gate-fast.mjs                       # G1/G2 PASS ... G3 FAIL
-node demo/radar/select.mjs --change 01-audit-mutation   # floors + reachability, reasons per test
-node demo/radar/run.mjs                             # VERDICT: FAIL — FIRST FAILURE on the audit-immutability floor
+node demo/radar/gate-fast.mjs --change 01-audit-mutation # G1/G2 PASS ... G3 FAIL
+node demo/radar/select.mjs --change 01-audit-mutation    # floors + reachability, reasons per test
+node demo/radar/run.mjs                                  # VERDICT: FAIL — FIRST FAILURE on the audit-immutability floor
 
-# 2. fix + re-verify  (Stage 3 adds demo/changes/02-fix + the counter-example)
-demo/scripts/revert.sh
+# 2. fix stacks on top of the diff, re-run (the Convergence Loop — no revert)
 demo/scripts/apply-change.sh 02-fix
-node demo/radar/run.mjs                             # VERDICT: PASS — receipt: admissible_for_merge
+node demo/radar/run.mjs                                  # VERDICT: PASS — receipt: admissible_for_merge: true
 
-demo/scripts/revert.sh                              # back to a clean tree
+# 3. clean up
+demo/scripts/revert.sh                                   # unwinds 02-fix then 01-audit-mutation
 ```
 
 ## The seeded defect

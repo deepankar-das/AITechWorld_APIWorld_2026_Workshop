@@ -1,0 +1,8 @@
+{
+  "name": "02-fix",
+  "summary": "restore append-only enrichment (new linked event, original untouched) + counter-example",
+  "touched": [
+    "src/daemon/routes/enrich.ts",
+    "tests/integration/audit-enrich-immutability.test.ts"
+  ]
+}

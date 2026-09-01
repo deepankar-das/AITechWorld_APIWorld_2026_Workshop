@@ -1,29 +1,31 @@
 #!/usr/bin/env bash
-# Enforcer demo — undo whatever demo/scripts/apply-change.sh last applied.
+# Enforcer demo — unwind every change demo/scripts/apply-change.sh has stacked.
 #
 #   demo/scripts/revert.sh
 #
-# Restores every file the overlay touched to its committed state.
+# Restores every file any applied overlay touched to its committed state.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-STATE="$ROOT/demo/run-folder/.applied"
+STACK="$ROOT/demo/run-folder/.applied"
 
-if [[ ! -f "$STATE" ]]; then
+if [[ ! -f "$STACK" ]]; then
   echo "nothing applied."
   exit 0
 fi
 
-NAME="$(cat "$STATE")"
-OVERLAY="$ROOT/demo/changes/$NAME/overlay"
+mapfile -t NAMES < "$STACK"
 
-TOUCHED=()
-while IFS= read -r -d '' f; do
-  TOUCHED+=("${f#"$OVERLAY"/}")
-done < <(find "$OVERLAY" -type f -print0)
+# Union of every path touched across the whole stack.
+declare -A TOUCHED=()
+for name in "${NAMES[@]}"; do
+  OVERLAY="$ROOT/demo/changes/$name/overlay"
+  while IFS= read -r -d '' f; do
+    TOUCHED["${f#"$OVERLAY"/}"]=1
+  done < <(find "$OVERLAY" -type f -print0)
+done
 
-# Files that exist in the repo index → checkout; files the overlay added new → delete.
-for rel in "${TOUCHED[@]}"; do
+for rel in "${!TOUCHED[@]}"; do
   if git -C "$ROOT" cat-file -e "HEAD:$rel" 2>/dev/null; then
     git -C "$ROOT" checkout -- "$rel"
   else
@@ -31,5 +33,5 @@ for rel in "${TOUCHED[@]}"; do
   fi
 done
 
-rm -f "$STATE" "$ROOT/demo/run-folder/.applied-hash"
-echo "reverted '$NAME' — ${#TOUCHED[@]} file(s) restored."
+rm -f "$STACK" "$ROOT/demo/run-folder/.applied-hash"
+echo "reverted ${#NAMES[@]} change(s): ${NAMES[*]} — ${#TOUCHED[@]} file(s) restored."
