@@ -58,9 +58,11 @@ body{
 .stage-wrap{
   width: var(--slideW);
   height: var(--slideH);
-  position: relative;
+  position: absolute;
+  left: 0;
+  top: 0;
   flex: none;
-  transform-origin: center center;
+  transform-origin: top left;
 }
 
 .slide{
@@ -181,16 +183,18 @@ h1, h2, h3{ font-family: var(--font-display); font-weight: 600; color: var(--bri
 ol.steps{ margin: 0; padding: 0; list-style: none; display: grid; gap: .45rem; counter-reset: s; }
 ol.steps li{
   counter-increment: s;
-  display: grid;
-  grid-template-columns: 1.8rem 1fr;
-  gap: .75rem;
-  align-items: baseline;
+  position: relative;
+  padding-left: 2.55rem;
   font-size: .9rem;
   line-height: 1.42;
   color: var(--chalk);
 }
 ol.steps li::before{
   content: counter(s, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: .05em;
+  width: 1.8rem;
   font-family: var(--font-mono);
   font-size: .78rem;
   color: var(--amber);
@@ -202,8 +206,8 @@ ol.steps li::before{
 ol.steps li b{ color: var(--bright); font-weight: 500; }
 
 ul.list{ margin: 0; padding: 0; list-style: none; display: grid; gap: .4rem; }
-ul.list li{ display: grid; grid-template-columns: 1rem 1fr; gap: .75rem; font-size: .9rem; line-height: 1.42; color: var(--chalk); }
-ul.list li::before{ content: "\2014"; color: var(--amber); }
+ul.list li{ position: relative; padding-left: 1.75rem; font-size: .9rem; line-height: 1.42; color: var(--chalk); }
+ul.list li::before{ content: "\2014"; position: absolute; left: 0; color: var(--amber); }
 ul.list li b{ color: var(--bright); font-weight: 500; }
 
 table.t{ width: 100%; border-collapse: collapse; font-size: .9rem; }
@@ -388,7 +392,7 @@ figure.dia.wide svg{ max-width: 600px; }
 @media print{
   body{ overflow: visible; }
   .deck{ position: static; display: block; }
-  .stage-wrap{ width: auto; height: auto; transform: none !important; }
+  .stage-wrap{ width: auto; height: auto; position: static; transform: none !important; }
   .slide{ position: static; display: grid !important; min-height: 100vh; page-break-after: always; border-bottom: 1px solid #333; }
   .rail, .nav, .hint{ display: none; }
   .notes{ position: static; transform: none; max-height: none; }
@@ -548,12 +552,12 @@ figure.dia.wide svg{ max-width: 600px; }
     <p class="cap">Output: a risk-weighted list &mdash; reason and dimension per test &mdash; kept legible in the run folder.</p>
   </div></section>
 
-  <!-- 12 · FNR TARGETS -->
+  <!-- 12 · FALSE-NEGATIVE-RATE TARGETS -->
   <section class="slide"><div class="stage">
     <p class="eyebrow">RADAR</p>
     <h2>Every test carries a false-negative-rate target</h2>
-    <p class="lede">A false negative is a run that passes when the code is actually broken. Coverage never tracks this &mdash; it measures what a test <em>touches</em>, not what it <em>catches</em>. RADAR binds each test to an FNR target by priority tier, measured empirically over the test's history.</p>
-    <div class="well"><span class="k">tier</span>                       <span class="k">FNR target</span>
+    <p class="lede">A false negative is a run that passes when the code is actually broken. Coverage never tracks this &mdash; it measures what a test <em>touches</em>, not what it <em>catches</em>. RADAR binds each test to a false-negative-rate target by priority tier, measured empirically over the test's history.</p>
+    <div class="well"><span class="k">tier</span>                       <span class="k">target</span>
 critical invariant          <span class="am">&asymp; 0</span>
 high-blast-radius code      tighter
 low-priority code           loosest</div>
@@ -703,6 +707,7 @@ receipt               <span class="am">— hashed against the diff</span></div>
   <section class="slide"><div class="stage">
     <p class="eyebrow">Architecture first</p>
     <h2>Remove the attack surface structurally &mdash; then automate proof that it stays removed.</h2>
+    <p class="lede">Six of Enforcer's own architectural guarantees &mdash; each removes a class of attack by design, not by a test:</p>
     <ul class="list">
       <li>the developer cannot disable enforcement &mdash; managed hooks can't be removed, the daemon runs as root with keep-alive, toggling it needs an admin token</li>
       <li>the audit trail cannot be rewritten &mdash; no UPDATE/DELETE on stored events, enrichment appends a linked event, SHA-256 hash chain, signed exports</li>
@@ -911,7 +916,7 @@ Verdict:      <span class="pass">PASS</span>
     <ol class="steps">
       <li><b>The layered model</b> &mdash; fast gates (~3 min) catch most regressions; RADAR impact-selects the rest; the Convergence Loop drives residuals to zero before review.</li>
       <li><b>The split</b> &mdash; CI = whitebox: deterministic, fast, no infrastructure. Nightly = blackbox: live server, full attack simulation. Know which is which.</li>
-      <li><b>Closure discipline</b> &mdash; every test an FNR target, every critical invariant a mandatory floor, every commit a receipt bound to its diff, every fix a statement of what would prove it wrong.</li>
+      <li><b>Closure discipline</b> &mdash; every test a false-negative-rate target, every critical invariant a mandatory floor, every commit a receipt bound to its diff, every fix a statement of what would prove it wrong.</li>
     </ol>
   </div></section>
 
@@ -919,7 +924,7 @@ Verdict:      <span class="pass">PASS</span>
   <section class="slide"><div class="stage">
     <p class="eyebrow">Start small</p>
     <p class="statement sm lo">one repository &middot; one invariant suite &middot; one run artifact &middot; one class of AI-generated change</p>
-    <p class="cap">agenticfactory.ai &mdash; the framework&nbsp;&nbsp;/&nbsp;&nbsp;deepankardas.substack.com &mdash; the three-part series&nbsp;&nbsp;/&nbsp;&nbsp;OWASP WSTG coverage matrix</p>
+    <p class="cap">agenticfactory.ai &mdash; the framework&nbsp;&nbsp;/&nbsp;&nbsp;deepankardas.substack.com &mdash; the three-part series&nbsp;&nbsp;/&nbsp;&nbsp;OWASP WSTG coverage matrix&nbsp;&nbsp;/&nbsp;&nbsp;&ldquo;A CISO Operating Model for Human and Agent Coworking&rdquo; &mdash; the governance layer</p>
     <p class="statement hi" style="font-size:3rem;margin-top:.4rem">Questions.</p>
     <p class="lede">What sensitive API surface would you pilot first?</p>
   </div></section>
@@ -973,10 +978,10 @@ Verdict:      <span class="pass">PASS</span>
     "Act II·a divider. Let the sweep run for a beat. RADAR = Risk-Aware Dependency Analysis for Rapid Verification. Deepest section — slow down.",
     "The core claim: run exactly the right subset, with a defensible argument for sufficiency, and floors nothing can undercut. Contrast with a file-based selector, which misses indirect risk — a cache key turning a correct query into a cross-tenant leak.",
     "Walk the seven dimensions, pointing at each ring. The output is a risk-weighted list where each test carries its reason and its dimension. That legibility is what makes the selection auditable.",
-    "The concept no other framework names. A false negative is a test that passes while the code is broken. Coverage measures what a test touches; FNR measures what it catches. If a test drifts above its target, RADAR flags the test, not the code.",
+    "The concept no other framework names. A false negative is a test that passes while the code is broken. Coverage measures what a test touches; false-negative rate measures what it catches. If a test drifts above its target, RADAR flags the test, not the code.",
     "Read the four floors slowly — the slide the security audience is waiting for. RADAR is forbidden from selecting anchor tests away. 'Intelligence that lets a critical-invariant regression through is not welcome.'",
     "RADAR selection, played from the real run. Hit play. `node demo/radar/select.mjs --change 01-audit-mutation` against Enforcer's suite. Point at the [floor] tag on each row and the 'why' column — the selector isn't guessing; every test carries its reason and its dimension. This change touches one file (the audit enrichment route), and it lands entirely on floor-covered surface — so the six mandatory floors alone are the corpus. You can run this genuinely live: it's ~1s, no infrastructure.",
-    "The run folder is the audit substrate. Everything a regulator needs — not just which tests ran, but why each was chosen, its FNR target and observed rate, and the receipt hashed against the diff.",
+    "The run folder is the audit substrate. Everything a regulator needs — not just which tests ran, but why each was chosen, its false-negative-rate target and observed rate, and the receipt hashed against the diff.",
     "Act II·b divider. The Convergence Loop is the primitive the other two orbit. It is what makes left-shift real rather than aspirational.",
     "Walk the eight steps as a procedure, pointing at the ring. Emphasise step 2 (two lanes — product and test code), step 5 (one-shot fixes from no-rerun logs), step 8 (clean = terminate; new issues re-enter at step 2). The dashed arc is the loop-back.",
     "The economic argument. This loop was theoretically correct and impossible in the human-paced world. Agent velocity moved cost-per-iteration from human-days to agent-minutes. A genuine invention of the agentic era, not a rename.",
@@ -1003,11 +1008,20 @@ Verdict:      <span class="pass">PASS</span>
   ];
 
   var stageWrap = document.getElementById('stageWrap');
+  var navEl = document.querySelector('.nav');
 
-  // Scale the whole 1280x720 canvas as one unit to fit the viewport.
+  // Scale the whole 1280x720 canvas as one unit to fit the viewport, reserving
+  // real screen pixels at the bottom for the nav pill (it's position:fixed and
+  // does not scale with the canvas, so slide content must never be centered
+  // into the space it occupies).
   function scaleDeck(){
-    var s = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
-    stageWrap.style.transform = 'scale(' + s + ')';
+    var navReserve = (window.innerHeight - navEl.getBoundingClientRect().top) + 16;
+    var availH = Math.max(240, window.innerHeight - navReserve);
+    var s = Math.min(window.innerWidth / 1280, availH / 720);
+    var w = 1280 * s, h = 720 * s;
+    var left = (window.innerWidth - w) / 2;
+    var top = (availH - h) / 2;
+    stageWrap.style.transform = 'translate(' + left + 'px,' + top + 'px) scale(' + s + ')';
   }
 
   function show(n){
