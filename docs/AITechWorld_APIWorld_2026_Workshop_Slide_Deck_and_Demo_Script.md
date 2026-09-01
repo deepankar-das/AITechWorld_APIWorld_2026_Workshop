@@ -6,8 +6,8 @@
 **Session:** Tuesday, September 1, 2026 · 12:00–12:50 PM PDT
 **Location:** API World — Workshop Stage A
 **Speaker:** Deepankar Das — CEO & Founder, Cyberhead AI
-**Slide deck (live artifact):** `docs/AITechWorld_APIWorld_2026_Workshop_Deck.html` (38 slides, fixed 1280×720 canvas)
-**This document:** v1.0 — full word-for-word speaking script, rewritten to match the current 38-slide deck and the real, runnable Enforcer demo. Supersedes the v0.1 draft (which described an earlier, unbuilt cache-key/tenant-isolation demo). Use this instead of the deck's own in-app notes panel when you want the full script, not just cues.
+**Slide deck (live artifact):** `docs/AITechWorld_APIWorld_2026_Workshop_Deck.html` (39 slides, fixed 1280×720 canvas)
+**This document:** v1.1 — full word-for-word speaking script, matching the current 39-slide deck (includes the slide 36 "switch to the terminal" placeholder) and the real, runnable Enforcer demo. Supersedes the v0.1 draft (which described an earlier, unbuilt cache-key/tenant-isolation demo). Use this instead of the deck's own in-app notes panel when you want the full script, not just cues.
 
 ---
 
@@ -22,8 +22,8 @@ The deck carries no built-in per-slide timestamps — the times below are an est
 | Act II·b — Convergence Loop | 16–20 | The eight-step loop, why it's only economical now, the convergence curve, a live-captured run showing the loop close | ~6 min |
 | Act II·c — CI vs. nightly | 21–26 | Architecture-first security, the whitebox/blackbox split and why, a live-captured fast-gate catch, the SQLi catch story | ~6 min |
 | Act III — Closure discipline | 27–33 | Why a green rerun isn't closure, the Cross-Model Convergence Review jury, the research behind it, the commit-attested gate, "works" is not a test, the human checkpoint (Ford) | ~8 min |
-| Act IV — Demo | 34–35 + live demo | Demo framing, then the real live demo against Enforcer's own repo (see the Live Demo Script below) | ~2 min + 7 min |
-| Act IV — Close | 36–38 | Take-home, three things, resources, open Q&A | ~5 min |
+| Act IV — Demo | 34–36 + live demo | Demo framing, then a "switch to the terminal" placeholder slide, then the real live demo against Enforcer's own repo (see the Live Demo Script below) | ~2 min + 7 min |
+| Act IV — Close | 37–39 | Take-home, three things, resources, open Q&A | ~5 min |
 
 That sums to ~50 minutes including buffer. If you're short on time, the live-demo section already has its own tested cut order — see **Live Demo Script → If you're tight on time** below. Upstream of that, the highest-value cuts are slide 30 (research citations — mention the headline number, skip the per-paper detail) and slide 24 (why whitebox/blackbox split — the split itself on slide 23 usually speaks for itself).
 
@@ -1024,6 +1024,28 @@ $ demo/scripts/revert.sh                             back to a clean tree
 
 ---
 
+## SLIDE 36 — Live demo placeholder · (stays on screen for the whole live demo)
+
+### On slide
+
+> Live demo
+>
+> Switch to the terminal.
+> Come back here when the demo closes.
+>
+> demo/scripts/run-demo.sh — press Enter to advance each beat · fallback clips: slides 14 / 20 / 25
+
+### Speaker script
+
+> Nothing to say over this slide — it's not narrated. Advance to it right after slide 35, switch your display input (or alt-tab) to the terminal, and run the live demo below. When the demo closes, switch back — this slide will still be on screen — and advance into Act IV.
+
+### Delivery notes
+
+- This slide exists purely so nothing changes on the projected screen while you're heads-down in the terminal — the audience isn't staring at your desktop or a slide transition mid-demo.
+- Leave it up for the full ~7 minutes of the live demo below, then advance straight to slide 37 (Act IV) once you're done.
+
+---
+
 # Live demo script
 
 *This section is reproduced from `demo/DEMO_SCRIPT.md`, the repo's own authoritative, tested demo script — kept in sync with it rather than duplicated with drift. If the two ever disagree, `demo/DEMO_SCRIPT.md` is the source of truth; update this section to match it, not the other way around.*
@@ -1210,7 +1232,7 @@ demo/scripts/revert.sh
 
 ---
 
-## SLIDE 36 — Act IV divider (Take home) · ~10s
+## SLIDE 37 — Act IV divider (Take home) · ~10s
 
 ### On slide
 
@@ -1228,7 +1250,7 @@ demo/scripts/revert.sh
 
 ---
 
-## SLIDE 37 — If you can't name your guardrails · ~60s
+## SLIDE 38 — If you can't name your guardrails · ~60s
 
 ### On slide
 
@@ -1253,7 +1275,7 @@ demo/scripts/revert.sh
 
 ---
 
-## SLIDE 38 — Questions · ~20s + open floor
+## SLIDE 39 — Questions · ~20s + open floor
 
 ### On slide
 
@@ -1261,7 +1283,7 @@ demo/scripts/revert.sh
 >
 > one repository · one invariant suite · one run artifact · one class of AI-generated change
 >
-> agenticfactory.ai — the framework / deepankardas.substack.com — the three-part series / OWASP WSTG coverage matrix
+> agenticfactory.ai — the framework / deepankardas.substack.com — the three-part series / OWASP WSTG coverage matrix / "A CISO Operating Model for Human and Agent Coworking" — the governance layer
 >
 > **Questions.**
 >
@@ -1269,7 +1291,7 @@ demo/scripts/revert.sh
 
 ### Speaker script
 
-> Start small: one repository, one invariant suite, one run artifact, one class of AI-generated change. The framework is at agenticfactory.ai; the three-part series that walks through every primitive in full detail — the diagnosis, the manual, and multi-agent coordination at scale — is at deepankardas.substack.com; and there's an OWASP WSTG coverage matrix if you want to map this against your own existing testing standard.
+> Start small: one repository, one invariant suite, one run artifact, one class of AI-generated change. The framework is at agenticfactory.ai; the three-part series that walks through every primitive in full detail — the diagnosis, the manual, and multi-agent coordination at scale — is at deepankardas.substack.com; there's an OWASP WSTG coverage matrix if you want to map this against your own existing testing standard; and if you're the one who has to answer for all of this organizationally, not just technically, there's a companion piece — "A CISO Operating Model for Human and Agent Coworking" — that covers the governance layer this talk didn't have time for.
 >
 > Questions. And to open it up: what sensitive API surface would you pilot this on first?
 
@@ -1304,11 +1326,11 @@ demo/scripts/revert.sh
 
 ## During the session
 
-- [ ] Reach slide 34 (demo setup) on schedule, then move straight to the terminal.
+- [ ] Reach slide 34 (demo setup) on schedule; advance through 35 to 36 (the "switch to the terminal" placeholder), then move to the terminal — leave 36 on screen for the whole live demo.
 - [ ] Preserve the failure (Beat 3/5) before showing the fix (Beat 6) — never skip straight to green.
 - [ ] If any live command stalls or errors, switch to the deck and hit play on the matching captured clip (14/20/25) rather than debugging on stage.
 - [ ] Leave real time for Q&A — don't let the live demo run long at its expense.
 
 ---
 
-*Securing AI-Generated APIs at the Speed of AI — slide deck and demo script, v1.0. Rewritten to match `docs/AITechWorld_APIWorld_2026_Workshop_Deck.html` and `demo/DEMO_SCRIPT.md`. Supersedes v0.1.*
+*Securing AI-Generated APIs at the Speed of AI — slide deck and demo script, v1.1. Rewritten to match `docs/AITechWorld_APIWorld_2026_Workshop_Deck.html` (39 slides) and `demo/DEMO_SCRIPT.md`. Supersedes v0.1.*
