@@ -1,0 +1,30 @@
+# Enforcer — Docker Compose for Development
+#
+# Services:
+#   - postgres: Audit event store (append-only JSONB)
+#
+# Usage:
+#   docker compose up -d postgres      # Start PostgreSQL
+#   docker compose down                # Stop all services
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: enforcer-postgres
+    environment:
+      POSTGRES_DB: enforcer
+      POSTGRES_USER: enforcer
+      POSTGRES_PASSWORD: enforcer_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U enforcer"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

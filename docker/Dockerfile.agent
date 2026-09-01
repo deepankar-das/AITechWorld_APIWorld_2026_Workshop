@@ -1,0 +1,43 @@
+# Enforcer — Hardened Agent Container
+# Copyright © 2026 Deepankar Das. Proprietary and Confidential.
+#
+# Secure container for running AI coding agents with Enforcer enforcement.
+# TDD Reference: Section 13 (Secure Container Mode)
+#
+# Security profile:
+#   - Read-only root filesystem
+#   - Non-root user (node:node)
+#   - All capabilities dropped
+#   - No Docker socket mount allowed
+#   - Network routed through Enforcer proxy
+#   - Project directory bind-mounted (rw)
+
+FROM node:22-alpine
+
+# Security: run as non-root
+RUN addgroup -S agent && adduser -S agent -G agent
+
+# Install only essential tools
+RUN apk add --no-cache git curl bash
+
+# Working directory for the mounted project
+WORKDIR /workspace
+
+# Environment: route network through Enforcer proxy on host
+ENV HTTP_PROXY=http://host.docker.internal:9101
+ENV HTTPS_PROXY=http://host.docker.internal:9101
+ENV NO_PROXY=localhost,127.0.0.1,host.docker.internal
+
+# Enforcer environment
+ENV AA_DEPLOYMENT_MODE=container
+ENV AA_DAEMON_URL=http://host.docker.internal:9100
+
+# Switch to non-root user
+USER agent
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=3s --retries=3 \
+  CMD curl -sf http://host.docker.internal:9100/v1/health || exit 1
+
+# Default: interactive shell for agent work
+CMD ["bash"]

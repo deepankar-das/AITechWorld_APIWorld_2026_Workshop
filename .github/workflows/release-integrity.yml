@@ -1,0 +1,65 @@
+name: Release Integrity
+
+on:
+  push:
+    paths:
+      - 'go/**'
+      - '.github/workflows/release-integrity.yml'
+  pull_request:
+    paths:
+      - 'go/**'
+      - '.github/workflows/release-integrity.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+
+      - name: Install Syft
+        uses: anchore/sbom-action/download-syft@v0
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.8.1
+
+      - name: Build and Test
+        run: |
+          make -C go test
+          make -C go package
+
+      - name: Generate SBOM + Provenance
+        run: |
+          make -C go sbom
+          make -C go provenance
+
+      - name: Sign Artifact (keyless)
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          make -C go sign
+
+      - name: Verify Signatures
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          make -C go verify-signatures
+
+      - name: Upload Integrity Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-integrity-artifacts
+          path: |
+            go/dist/*.tar.gz
+            go/dist/*.spdx.json
+            go/dist/*.sig.bundle
+            go/dist/*provenance.json

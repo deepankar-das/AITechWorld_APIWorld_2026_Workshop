@@ -1,0 +1,39 @@
+node_modules/
+dist/
+build/
+.test-results/
+*.log
+.env
+.env.local
+.DS_Store
+*.tsbuildinfo
+
+# Console build artifacts (rebuilt by make console / deploy scripts)
+console/out/
+console/out-hub/
+console/out-sentinel/
+console/.next/
+
+# Go embedded console assets (copied from console/out-* during build)
+go/internal/console/out-hub/
+go/internal/console/out-sentinel/
+go/internal/console/out/
+
+# Go binaries
+go/bin/
+go/daemon
+go/central
+go/client
+go/hookhandler
+go/authseed
+
+# Coverage
+coverage.out
+coverage.html
+
+# Playwright
+test-results/
+playwright-report/
+
+# Go toolchain tarball (re-downloadable; do not commit)
+go1.*.tar.gz

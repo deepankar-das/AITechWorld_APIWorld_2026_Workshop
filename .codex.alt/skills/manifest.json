@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "generatedBy": "manual",
+  "skills": [
+    {"name": "adm-checkin", "path": ".codex/skills/adm-checkin", "version": "1.0.0", "category": "quality"},
+    {"name": "adm-commit-gates", "path": ".codex/skills/adm-commit-gates", "version": "1.0.0", "category": "quality"},
+    {"name": "adm-deploy", "path": ".codex/skills/adm-deploy", "version": "1.0.0", "category": "operations"},
+    {"name": "adm-frontend", "path": ".codex/skills/adm-frontend", "version": "1.0.0", "category": "frontend"},
+    {"name": "adm-implementation-plan", "path": ".codex/skills/adm-implementation-plan", "version": "1.0.0", "category": "planning"},
+    {"name": "adm-radar", "path": ".codex/skills/adm-radar", "version": "1.0.0", "category": "testing"},
+    {"name": "adm-schema-change", "path": ".codex/skills/adm-schema-change", "version": "1.0.0", "category": "backend"},
+    {"name": "adm-test-writing", "path": ".codex/skills/adm-test-writing", "version": "1.0.0", "category": "testing"},
+    {"name": "adm-controller-core", "path": ".codex/skills/adm-controller-core", "version": "1.0.0", "category": "orchestration"},
+    {"name": "adm-doc-review", "path": ".codex/skills/adm-doc-review", "version": "1.0.0", "category": "review"},
+    {"name": "adm-release-readiness", "path": ".codex/skills/adm-release-readiness", "version": "1.0.0", "category": "release"},
+    {"name": "adm-root-cause-debugging", "path": ".codex/skills/adm-root-cause-debugging", "version": "1.0.0", "category": "debugging"}
+  ]
+}

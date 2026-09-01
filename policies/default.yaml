@@ -1,0 +1,322 @@
+# Enforcer — Default Policy Bundle
+#
+# 7 rules implementing the org-level baseline per TDD Section 8.4.
+# Evaluation order: deny → require_approval → allow → default deny.
+
+bundle_version: "v2026.04.29.1"
+scope_level: organization
+
+rules:
+  # ── DENY rules (evaluated first) ─────────────────────────────────────────
+
+  - policy_id: org.block_non_project_writes
+    version: "v2026.04.27.1"
+    scope:
+      level: organization
+    subject:
+      agent_types: ["*"]
+      users: ["*"]
+    action:
+      types: [file.write, file.delete, file.move]
+    resource:
+      path_outside_project: true
+    conditions: {}
+    effect:
+      decision: deny
+      reason_code: PATH_OUTSIDE_PROJECT_ROOT
+      reason_human: "Write outside the project directory is blocked by organization policy."
+    logging:
+      mode: full
+    approval:
+      required: false
+
+  - policy_id: org.block_shell_deletes_outside_project
+    version: "v2026.04.29.1"
+    scope:
+      level: organization
+    subject:
+      agent_types: ["*"]
+      users: ["*"]
+    action:
+      types: [shell.exec]
+    resource:
+      shell_delete_outside_project: true
+    conditions: {}
+    effect:
+      decision: deny
+      reason_code: SHELL_DELETE_OUTSIDE_PROJECT_BLOCKED
+      reason_human: "Deleting files outside the project directory via shell command is blocked by organization policy."
+    logging:
+      mode: full
+    approval:
+      required: false
+
+  - policy_id: org.block_shell_moves_outside_project
+    version: "v2026.04.29.1"
+    scope:
+      level: organization
+    subject:
+      agent_types: ["*"]
+      users: ["*"]
+    action:
+      types: [shell.exec]
+    resource:
+      shell_move_outside_project: true
+    conditions: {}
+    effect:
+      decision: deny
+      reason_code: SHELL_MOVE_OUTSIDE_PROJECT_BLOCKED
+      reason_human: "Moving, copying, or renaming files outside the project directory via shell command is blocked by organization policy."
+    logging:
+      mode: full
+    approval:
+      required: false
+
+  - policy_id: org.block_sensitive_reads
+    version: "v2026.04.27.1"
+    scope:
+      level: organization
+    subject:
+      agent_types: ["*"]
+      users: ["*"]
+    action:
+      types: [file.read]
+    resource:
+      path_patterns:
+        - "~/.ssh/*"
+        - "~/.aws/*"
+        - "~/.config/gcloud/*"
+        - "~/.gnupg/*"
+        - "~/.netrc"
+    conditions: {}
+    effect:
+      decision: deny
+      reason_code: SENSITIVE_PATH_READ_BLOCKED
+      reason_human: "Reading from sensitive credential paths is blocked by organization policy."
+    logging:
+      mode: full
+    approval:
+      required: false
+
+  - policy_id: org.block_non_allowlisted_hosts
+    version: "v2026.04.27.1"
+    scope:
+      level: organization
+    subject:
+      agent_types: ["*"]
+      users: ["*"]
+    action:
+      types: [network.request]
+    resource:
+      host_not_in_allowlist: true
+    conditions: {}
+    effect:
+      decision: deny
+      reason_code: HOST_NOT_ALLOWLISTED
+      reason_human: "Network requests to non-allowlisted hosts are blocked by organization policy."
+    logging:
+      mode: full
+    approval:
+      required: false
+
+  # ── REQUIRE_APPROVAL rules (evaluated second) ─────────────────────────────
+
+  - policy_id: org.approve_destructive_commands
+    version: "v2026.04.27.1"
+    scope:
+      level: organization
+    subject:
+      agent_types: ["*"]
+      users: ["*"]
+    action:
+      types: [shell.exec]
+    resource:
+      command_patterns:
+        - "rm "
+        - "mv "
+        - "rename "
+        - "git push --force"
+        - "git push -f"
+        - "git reset --hard"
+        - "chmod"
+        - "kill -9"
+        - "pkill"
+    conditions: {}
+    effect:
+      decision: require_approval
+      reason_code: DESTRUCTIVE_COMMAND_REQUIRES_APPROVAL
+      reason_human: "This command matches a destructive pattern. Human approval is required before execution."
+    logging:
+      mode: full
+    approval:
+      required: true
+
+  - policy_id: org.approve_unknown_network
+    version: "v2026.04.27.1"
+    scope:
+      level: organization
+    subject:
+      agent_types: ["*"]
+      users: ["*"]
+    action:
+      types: [network.request]
+    resource:
+      host_in_warning_list: true
+    conditions: {}
+    effect:
+      decision: require_approval
+      reason_code: NETWORK_HOST_REQUIRES_APPROVAL
+      reason_human: "This host is on the warning list. Human approval is required."
+    logging:
+      mode: full
+    approval:
+      required: true
+
+  # ── ALLOW rules (evaluated third) ──────────────────────────────────────────
+
+  - policy_id: org.allow_internal_tools
+    version: "v2026.04.29.1"
+    scope:
+      level: organization
+    subject:
+      agent_types: ["*"]
+      users: ["*"]
+    action:
+      types: [internal.orchestration]
+    resource: {}
+    conditions: {}
+    effect:
+      decision: allow
+      reason_code: INTERNAL_TOOL_ALLOWED
+      reason_human: "Internal orchestration tools (Agent, TodoWrite, Skill, etc.) are allowed. Their child actions are governed separately."
+    logging:
+      mode: full
+    approval:
+      required: false
+
+  - policy_id: org.allow_project_files
+    version: "v2026.04.27.1"
+    scope:
+      level: organization
+    subject:
+      agent_types: ["*"]
+      users: ["*"]
+    action:
+      types: [file.read, file.write, file.delete, file.move]
+    resource:
+      path_inside_project: true
+    conditions: {}
+    effect:
+      decision: allow
+      reason_code: PROJECT_PATH_ALLOWED
+      reason_human: "File operations within the project directory are allowed."
+    logging:
+      mode: full
+    approval:
+      required: false
+
+  - policy_id: org.allow_safe_commands
+    version: "v2026.04.27.1"
+    scope:
+      level: organization
+    subject:
+      agent_types: ["*"]
+      users: ["*"]
+    action:
+      types: [shell.exec]
+    resource: {}
+    conditions: {}
+    effect:
+      decision: allow
+      reason_code: COMMAND_ALLOWED
+      reason_human: "This command does not match any restricted pattern. Allowed."
+    logging:
+      mode: full
+    approval:
+      required: false
+
+  - policy_id: org.approve_package_installs
+    version: "v2026.04.27.1"
+    scope:
+      level: organization
+    subject:
+      agent_types: ["*"]
+      users: ["*"]
+    action:
+      types: [shell.exec, package.install]
+    resource:
+      command_patterns:
+        - "npm install"
+        - "npm i "
+        - "npm add"
+        - "yarn add"
+        - "pnpm add"
+        - "pip install"
+        - "pip3 install"
+        - "brew install"
+        - "apt install"
+        - "apt-get install"
+        - "gem install"
+        - "cargo install"
+        - "go install"
+    conditions: {}
+    effect:
+      decision: require_approval
+      reason_code: PACKAGE_INSTALL_REQUIRES_APPROVAL
+      reason_human: "Package installation requires human approval. Review the package name and registry before approving."
+    logging:
+      mode: full
+    approval:
+      required: true
+
+  - policy_id: org.deny_credential_access
+    version: "v2026.04.27.1"
+    scope:
+      level: organization
+    subject:
+      agent_types: ["*"]
+      users: ["*"]
+    action:
+      types: [file.read, shell.exec]
+    resource:
+      command_patterns:
+        - "cat .env"
+        - "cat ~/.ssh/"
+        - "cat ~/.aws/"
+        - "printenv"
+        - "aws configure"
+        - "gcloud auth"
+        - "az login"
+        - "vault read"
+        - "vault kv get"
+    conditions: {}
+    effect:
+      decision: deny
+      reason_code: CREDENTIAL_ACCESS_DENIED
+      reason_human: "Direct access to credentials and secrets is blocked by organization policy. Use scoped credential mediation."
+    logging:
+      mode: full
+    approval:
+      required: false
+
+  # ── MCP GOVERNANCE rules ─────────────────────────────────────────────────
+
+  - policy_id: org.mcp_require_approval_untrusted
+    version: "v2026.04.27.1"
+    scope:
+      level: organization
+    subject:
+      agent_types: ["*"]
+      users: ["*"]
+    action:
+      types: [mcp.invoke]
+    resource: {}
+    conditions: {}
+    effect:
+      decision: require_approval
+      reason_code: MCP_UNTRUSTED_SERVER_REQUIRES_APPROVAL
+      reason_human: "MCP tool invocations on untrusted servers require human approval."
+    logging:
+      mode: full
+    approval:
+      required: true

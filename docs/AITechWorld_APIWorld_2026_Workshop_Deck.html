@@ -1,0 +1,1052 @@
+<title>Securing AI-Generated APIs</title>
+<meta name="description" content="Conference workshop deck — the Agentic Development Model, RADAR risk-aware test selection, and closure discipline for verifying AI-generated APIs at agent velocity.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+:root{
+  color-scheme: dark;
+
+  --ink:      #0B0E15;
+  --panel:    #131824;
+  --panel-2:  #171D2B;
+  --sunken:   #070A10;
+  --grid:     #1F2836;
+  --grid-2:   #2A3547;
+  --slate:    #868FA1;
+  --slate-dim:#5C6577;
+  --chalk:    #E7E9ED;
+  --bright:   #FBFCFE;
+  --amber:    #E6A23C;
+  --amber-dk: #B97C22;
+  --pass:     #58B98A;
+  --fail:     #E15540;
+
+  --font-display: "Saira", "Arial Narrow", system-ui, sans-serif;
+  --font-body:    "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --pad: clamp(1.4rem, 4.5vw, 4rem);
+  --navspace: 5.75rem;
+  --stageW: 980px;
+}
+
+*{ box-sizing: border-box; }
+
+body{
+  margin: 0;
+  background: var(--ink);
+  color: var(--chalk);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+/* ---------- deck scaffold ---------- */
+.deck{ position: fixed; inset: 0; overflow: hidden; background: var(--ink); }
+
+.slide{
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-items: center;
+  padding: var(--pad);
+  padding-bottom: calc(var(--pad) + var(--navspace));
+}
+.slide.is-current{ display: grid; }
+.slide--divider{ background: var(--sunken); }
+
+.stage{
+  width: min(var(--stageW), 100%);
+  display: grid;
+  gap: 1.15rem;
+  transform-origin: center center;
+  will-change: transform;
+}
+.stage > *{ max-width: 100%; }
+
+@media (prefers-reduced-motion: no-preference){
+  .slide.is-current .stage{ animation: fadein .28s ease-out; }
+}
+@keyframes fadein{ from{ opacity: 0; } }
+
+/* ---------- type ---------- */
+.eyebrow{
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  font-weight: 500;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--amber);
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  margin: 0;
+}
+.eyebrow::after{ content: ""; flex: 1; height: 1px; background: var(--grid-2); }
+
+h1, h2, h3{ font-family: var(--font-display); font-weight: 600; color: var(--bright); text-wrap: balance; margin: 0; }
+
+.slide h2{ font-size: 2.5rem; line-height: 1.07; letter-spacing: -0.005em; }
+
+.statement{
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 3.9rem;
+  line-height: 1.03;
+  letter-spacing: -0.012em;
+  color: var(--bright);
+  text-wrap: balance;
+  margin: 0;
+}
+.statement.sm{ font-size: 2.3rem; line-height: 1.15; }
+.statement .lo{ color: var(--slate); }
+.statement .hi{ color: var(--amber); }
+
+.lede{ font-size: 1.22rem; line-height: 1.55; color: var(--chalk); max-width: 58ch; margin: 0; }
+.lede strong{ color: var(--bright); font-weight: 500; }
+.lede em{ color: var(--amber); font-style: normal; }
+
+.kicker{
+  border-left: 2px solid var(--amber);
+  padding: .45rem 0 .45rem 1.1rem;
+  font-size: 1.16rem;
+  color: var(--bright);
+  max-width: 56ch;
+  margin: 0;
+}
+.kicker span{ color: var(--slate); }
+
+.cap{ font-size: .82rem; color: var(--slate-dim); font-family: var(--font-mono); letter-spacing: .02em; margin: 0; }
+
+.act-num{ font-family: var(--font-mono); font-size: 6rem; font-weight: 400; color: var(--grid-2); line-height: 1; margin: 0; }
+.act-title{ font-size: 3rem; line-height: 1.05; }
+
+/* ---------- layout blocks ---------- */
+.grid-2{ display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+.grid-2.tight{ grid-template-columns: 1fr 1.05fr; align-items: center; }
+
+.panel{
+  background: var(--panel);
+  border: 1px solid var(--grid);
+  border-radius: 4px;
+  padding: 1.25rem 1.4rem;
+  display: grid;
+  gap: .5rem;
+  align-content: start;
+}
+.panel h3{
+  font-size: .9rem;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.panel p{ margin: 0; font-size: .95rem; color: var(--chalk); }
+.panel--warn{ border-color: var(--fail); }
+.panel--warn h3{ color: var(--fail); }
+
+.stat-row{ display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--grid); border: 1px solid var(--grid); }
+.stat{ background: var(--ink); padding: .95rem 1.05rem; display: grid; gap: .25rem; }
+.stat--bad .n{ color: var(--fail); }
+.stat--ok .n{ color: var(--pass); }
+.stat .n{ font-family: var(--font-mono); font-size: 1.85rem; color: var(--bright); line-height: 1; font-variant-numeric: tabular-nums; }
+.stat .l{ font-size: .76rem; color: var(--slate); line-height: 1.3; }
+
+ol.steps{ margin: 0; padding: 0; list-style: none; display: grid; gap: .6rem; counter-reset: s; }
+ol.steps li{
+  counter-increment: s;
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  gap: .85rem;
+  align-items: baseline;
+  font-size: .96rem;
+  color: var(--chalk);
+}
+ol.steps li::before{
+  content: counter(s, decimal-leading-zero);
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  color: var(--amber);
+  border: 1px solid var(--amber-dk);
+  border-radius: 3px;
+  padding: .12rem 0;
+  text-align: center;
+}
+ol.steps li b{ color: var(--bright); font-weight: 500; }
+
+ul.list{ margin: 0; padding: 0; list-style: none; display: grid; gap: .5rem; }
+ul.list li{ display: grid; grid-template-columns: 1rem 1fr; gap: .8rem; font-size: .96rem; color: var(--chalk); }
+ul.list li::before{ content: "\2014"; color: var(--amber); }
+ul.list li b{ color: var(--bright); font-weight: 500; }
+
+table.t{ width: 100%; border-collapse: collapse; font-size: .95rem; }
+table.t th{
+  text-align: left;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: .7rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--slate);
+  padding: 0 1rem .65rem 0;
+  border-bottom: 1px solid var(--grid-2);
+}
+table.t td{ padding: .65rem 1rem .65rem 0; border-bottom: 1px solid var(--grid); color: var(--chalk); vertical-align: top; }
+table.t td:first-child{ color: var(--bright); white-space: nowrap; }
+
+.well{
+  background: var(--sunken);
+  border: 1px solid var(--grid);
+  border-left: 2px solid var(--amber);
+  border-radius: 3px;
+  padding: 1rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: .86rem;
+  line-height: 1.7;
+  color: var(--chalk);
+  white-space: pre-wrap;
+}
+.well .k{ color: var(--slate); }
+.well .pass{ color: var(--pass); }
+.well .fail{ color: var(--fail); }
+.well .am{ color: var(--amber); }
+
+.chips{ display: flex; flex-wrap: wrap; gap: .45rem; }
+.chip{ font-family: var(--font-mono); font-size: .76rem; padding: .28rem .55rem; border: 1px solid var(--grid-2); border-radius: 3px; color: var(--slate); }
+
+.flow{ font-family: var(--font-mono); font-size: .9rem; color: var(--slate); line-height: 2; }
+.flow b{ color: var(--amber); font-weight: 400; }
+
+.clip-cue{
+  display: flex; align-items: center; gap: 1rem;
+  font-family: var(--font-mono); color: var(--amber);
+  font-size: .88rem; letter-spacing: .16em; text-transform: uppercase;
+}
+.clip-cue .play{
+  width: 2.8rem; height: 2.8rem; border: 1px solid var(--amber); border-radius: 50%;
+  display: grid; place-content: center; flex: none;
+}
+.clip-cue .play::before{
+  content: ""; width: 0; height: 0;
+  border-left: 11px solid var(--amber);
+  border-top: 7px solid transparent; border-bottom: 7px solid transparent;
+  margin-left: 3px;
+}
+.clip-cue.live .play{ border-color: var(--fail); }
+.clip-cue.live .play::before{ border-left-color: var(--fail); }
+.clip-cue.live{ color: var(--fail); }
+
+/* ---------- diagrams ---------- */
+figure.dia{ margin: 0; display: grid; gap: .7rem; justify-items: center; }
+figure.dia svg{ width: 100%; max-width: 340px; height: auto; overflow: visible; }
+.dia text{ font-family: var(--font-mono); fill: var(--slate); }
+.dia .lbl-hi{ fill: var(--bright); }
+.dia .ring{ fill: none; stroke: var(--grid-2); stroke-width: 1; }
+.dia .ring-on{ stroke: var(--amber-dk); }
+.dia .sweep{ transform-origin: 200px 170px; }
+.dia .node{ fill: var(--panel); stroke: var(--grid-2); }
+.dia .node-hi{ stroke: var(--amber); }
+.dia .conn{ fill: none; stroke: var(--grid-2); stroke-width: 1.4; }
+.dia .conn-return{ stroke: var(--amber-dk); stroke-dasharray: 3 3; }
+.dia .curve{ fill: none; stroke: var(--amber); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.dia .curve-grid{ stroke: var(--grid); stroke-width: 1; }
+.dia .pt{ fill: var(--amber); }
+.dia .pt-end{ fill: var(--pass); }
+figure.dia.wide svg{ max-width: 600px; }
+
+@media (prefers-reduced-motion: no-preference){
+  .is-current .sweep{ animation: sweep 11s linear infinite; }
+  .is-current .curve{ stroke-dasharray: 900; stroke-dashoffset: 900; animation: draw 1.5s .2s ease-out forwards; }
+  .is-current .pt, .is-current .pt-end{ opacity: 0; animation: pop .3s ease-out forwards; }
+  .is-current .pt:nth-of-type(1){ animation-delay: .55s; }
+  .is-current .pt:nth-of-type(2){ animation-delay: .9s; }
+  .is-current .pt:nth-of-type(3){ animation-delay: 1.25s; }
+  .is-current .pt-end{ animation-delay: 1.6s; }
+}
+@keyframes sweep{ to{ transform: rotate(360deg); } }
+@keyframes draw{ to{ stroke-dashoffset: 0; } }
+@keyframes pop{ to{ opacity: 1; } }
+
+/* ---------- chrome ---------- */
+.rail{ position: fixed; left: 0; top: 0; height: 2px; background: var(--amber); width: 0; z-index: 40; transition: width .2s ease; }
+
+.nav{
+  position: fixed; left: 50%; bottom: 1.1rem; transform: translateX(-50%);
+  display: flex; align-items: center; gap: .45rem;
+  z-index: 60;
+  background: color-mix(in srgb, var(--panel-2) 90%, transparent);
+  border: 1px solid var(--grid-2);
+  border-radius: 999px;
+  padding: .4rem .5rem;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 24px rgba(0,0,0,.35);
+}
+.nav__btn{
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--grid-2);
+  color: var(--chalk);
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  line-height: 1;
+  width: 2.7rem; height: 2.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  display: grid; place-content: center;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.nav__btn:hover:not(:disabled){ border-color: var(--amber); color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, transparent); }
+.nav__btn:active:not(:disabled){ background: color-mix(in srgb, var(--amber) 22%, transparent); }
+.nav__btn:disabled{ opacity: .28; cursor: default; }
+.nav__btn--wide{ width: auto; padding: 0 1rem; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; }
+.nav__btn--fs{ font-size: 1.05rem; }
+.nav__sep{ width: 1px; align-self: stretch; margin: .25rem .15rem; background: var(--grid-2); }
+.nav__count{
+  font-family: var(--font-mono); font-size: .82rem; color: var(--slate);
+  padding: 0 .65rem; letter-spacing: .06em; font-variant-numeric: tabular-nums; min-width: 6ch; text-align: center;
+}
+
+.hint{
+  position: fixed; left: 50%; bottom: 5rem; transform: translateX(-50%);
+  font-family: var(--font-mono); font-size: .72rem; color: var(--slate-dim);
+  letter-spacing: .04em; z-index: 40; transition: opacity .6s ease; white-space: nowrap;
+}
+.hint.gone{ opacity: 0; pointer-events: none; }
+
+.notes{
+  position: fixed; left: 0; right: 0; bottom: 0;
+  background: var(--panel-2);
+  border-top: 1px solid var(--amber-dk);
+  transform: translateY(100%);
+  transition: transform .28s ease;
+  z-index: 70;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding: 1.2rem clamp(1.4rem, 5vw, 4rem) 1.6rem;
+}
+.notes.open{ transform: translateY(0); }
+.notes h4{ font-family: var(--font-mono); font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; color: var(--amber); margin: 0 0 .55rem; }
+.notes .body{ font-size: .92rem; line-height: 1.6; color: var(--chalk); max-width: 80ch; white-space: pre-wrap; }
+.notes-close{
+  position: absolute; top: .7rem; right: 1rem;
+  background: none; border: 1px solid var(--grid-2); color: var(--slate);
+  font-family: var(--font-mono); font-size: .7rem; padding: .3rem .6rem; border-radius: 3px; cursor: pointer;
+}
+
+:focus-visible{ outline: 2px solid var(--amber); outline-offset: 3px; }
+
+@media print{
+  body{ overflow: visible; }
+  .deck{ position: static; }
+  .slide{ position: static; display: grid !important; min-height: 100vh; page-break-after: always; border-bottom: 1px solid #333; }
+  .stage{ transform: none !important; }
+  .rail, .nav, .hint{ display: none; }
+  .notes{ position: static; transform: none; max-height: none; }
+}
+</style>
+
+<div class="rail" id="rail"></div>
+
+<main class="deck" id="deck">
+
+  <!-- 01 · TITLE -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">API World + CloudX + AI TechWorld 2026 · Workshop Stage A</p>
+    <h1 class="statement">Securing AI-Generated APIs<br><span class="lo">at the speed of AI</span></h1>
+    <p class="lede">Risk-aware test selection, the Agentic Development Model, and closure discipline &mdash; a verification system that keeps pace with code generation.</p>
+    <p class="cap">Sep 1 2026 · 12:00&ndash;12:50 PDT&nbsp;&nbsp;/&nbsp;&nbsp;Deepankar Das &mdash; CEO &amp; Founder, Cyberhead AI&nbsp;&nbsp;/&nbsp;&nbsp;~38 min · demo clips · Q&amp;A</p>
+  </div></section>
+
+  <!-- 02 · COLD OPEN -->
+  <section class="slide"><div class="stage">
+    <p class="statement"><span class="lo">Your agents landed</span> 47 commits <span class="lo">today.</span><br>Your last pen test <span class="lo">was in</span> March.</p>
+    <p class="lede">How many of those commits introduced a contract break, an authorization gap, or a tenant-isolation defect that nobody finds until the next audit?</p>
+  </div></section>
+
+  <!-- 03 · ACT I -->
+  <section class="slide slide--divider"><div class="stage">
+    <p class="act-num">I</p>
+    <h2 class="act-title">The problem is not that AI writes insecure code.<br><span style="color:var(--slate)">It is that the loop never converges.</span></h2>
+  </div></section>
+
+  <!-- 04 · WHIPLASH -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">The acceleration whiplash</p>
+    <h2>Throughput went up. So did everything you don't want.</h2>
+    <div class="stat-row">
+      <div class="stat stat--ok"><span class="n">+33.7%</span><span class="l">task throughput</span></div>
+      <div class="stat stat--ok"><span class="n">+66.2%</span><span class="l">epics completed</span></div>
+      <div class="stat stat--bad"><span class="n">+54%</span><span class="l">bugs per developer</span></div>
+      <div class="stat stat--bad"><span class="n">+242.7%</span><span class="l">incidents per merged PR</span></div>
+      <div class="stat stat--bad"><span class="n">+861%</span><span class="l">code churn</span></div>
+      <div class="stat stat--bad"><span class="n">+441.5%</span><span class="l">median PR review time</span></div>
+      <div class="stat stat--bad"><span class="n">31.3%</span><span class="l">of code reached production with no review at all</span></div>
+    </div>
+    <p class="kicker">"Strong pre-AI engineering maturity provides no protection." <span>&mdash; Faros AI 2026, 22,000 developers across 4,000 teams</span></p>
+  </div></section>
+
+  <!-- 05 · SHIFT-LEFT -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">Why shift-left never worked</p>
+    <h2>The loop always terminated on a schedule, not a quality gate.</h2>
+    <p class="lede">Shift-left has been the stated goal of every quality and security movement for two decades. It never worked at scale because there was no mechanism strong enough to force the residual defect count to zero before review. <strong>Sprints ended. Deadlines hit. Code shipped with known defects.</strong></p>
+    <p class="flow">annual pen test &nbsp;<b>&rarr;</b>&nbsp; release regression sweep &nbsp;<b>&rarr;</b>&nbsp; manual review &nbsp;<b>&rarr;</b>&nbsp; production</p>
+    <p class="cap">AI-generated changes arrive continuously. This cadence does not.</p>
+  </div></section>
+
+  <!-- 06 · COVERAGE IS DEAD -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">The economics at agent velocity</p>
+    <h2>Coverage is dead at agent velocity.</h2>
+    <div class="grid-2">
+      <div class="panel panel--warn">
+        <h3>Run everything</h3>
+        <p>The full suite becomes the critical path. Slow feedback, queueing, weak attribution &mdash; and the cloud bill climbs on a duty cycle nobody budgeted for. You lose the speed you adopted agents to gain.</p>
+      </div>
+      <div class="panel panel--warn">
+        <h3>Run too little</h3>
+        <p>Trust the unit tests, the agent summary, a plausible diff. Authorization gaps, cache-key leaks, unsafe CORS, malformed error paths escape into production.</p>
+      </div>
+    </div>
+    <p class="kicker">The answer is neither. It is <span style="color:var(--amber)">selective rigor</span>: the smallest credible corpus for this change, plus non-negotiable invariant floors.</p>
+  </div></section>
+
+  <!-- 07 · GARTNER -->
+  <section class="slide"><div class="stage">
+    <p class="statement sm"><span class="hi" style="font-size:3.4rem">40%</span> <span class="lo">of agentic AI projects will be cancelled by 2027.</span></p>
+    <p class="lede">Not from a lack of model capability. From methodological breakdown &mdash; review collapse, demo theater, inadequate specifications, ambition freeze. <strong>Convergence is a system property, not a per-commit property.</strong></p>
+    <p class="cap">Gartner, June 2026</p>
+  </div></section>
+
+  <!-- 08 · ADM -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">The operating model</p>
+    <h2>The Agentic Development Model</h2>
+    <p class="lede">Not a testing stage bolted onto a pipeline. An operating model with one load-bearing mechanism at its center and the others arranged around it &mdash; in the order a single diff flows through them.</p>
+    <ol class="steps">
+      <li><b>Cross-Model Convergence Review</b> &mdash; a three-member cross-family LLM jury that reviews every agent-authored diff and converges the findings into one owned action list.</li>
+      <li><b>RADAR</b> &mdash; the risk-aware test selector that keeps the loop economically viable, binding every test to a false-negative-rate target.</li>
+      <li><b>The Convergence Loop</b> &mdash; the eight-step process that drives residual defects to zero before the diff reaches human review.</li>
+    </ol>
+    <p class="kicker">Above the pipeline: a <span style="color:var(--amber)">commit-attested gate</span> that admits only diffs whose receipts prove the loop terminated cleanly on that specific change.</p>
+  </div></section>
+
+  <!-- 09 · ACT IIa -->
+  <section class="slide slide--divider"><div class="stage">
+    <p class="eyebrow">Act II &middot; a</p>
+    <figure class="dia" aria-hidden="true">
+      <svg viewBox="0 0 400 300" role="img">
+        <circle class="ring" cx="200" cy="170" r="24"></circle>
+        <circle class="ring" cx="200" cy="170" r="48"></circle>
+        <circle class="ring" cx="200" cy="170" r="72"></circle>
+        <circle class="ring ring-on" cx="200" cy="170" r="96"></circle>
+        <circle class="ring" cx="200" cy="170" r="120"></circle>
+        <g class="sweep">
+          <line x1="200" y1="170" x2="200" y2="46" stroke="var(--amber)" stroke-width="1.5"></line>
+          <path d="M200 170 L200 46 A124 124 0 0 1 262 63 Z" fill="var(--amber)" opacity="0.10"></path>
+        </g>
+        <circle cx="200" cy="170" r="3" fill="var(--amber)"></circle>
+      </svg>
+    </figure>
+    <h2 class="act-title">RADAR</h2>
+    <p class="cap">Risk-Aware Dependency Analysis for Rapid Verification</p>
+  </div></section>
+
+  <!-- 10 · WHAT RADAR IS -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">RADAR</p>
+    <h2>Run exactly the right subset &mdash; with a defensible argument for why it is sufficient.</h2>
+    <p class="lede">Full-suite regressions on every agent-authored diff are neither fast enough to feed the loop nor cheap enough for any sane cloud budget. Skipping is what produces the bad-quality exposure that surfaces in production. RADAR is the selector that resolves both, <em>with declared floors no selector can undercut</em>.</p>
+    <p class="kicker">Not a random subset. Not just the dependency graph. A risk-weighted list of tests, <span>each carrying the reason it was selected.</span></p>
+  </div></section>
+
+  <!-- 11 · SEVEN DIMENSIONS -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">RADAR</p>
+    <h2>Blast radius across seven dimensions</h2>
+    <div class="grid-2 tight">
+      <figure class="dia" aria-hidden="true">
+        <svg viewBox="0 0 300 300" role="img">
+          <circle class="ring" cx="150" cy="150" r="20"></circle>
+          <circle class="ring" cx="150" cy="150" r="40"></circle>
+          <circle class="ring" cx="150" cy="150" r="60"></circle>
+          <circle class="ring" cx="150" cy="150" r="80"></circle>
+          <circle class="ring" cx="150" cy="150" r="100"></circle>
+          <circle class="ring" cx="150" cy="150" r="120"></circle>
+          <circle class="ring ring-on" cx="150" cy="150" r="140"></circle>
+          <text x="150" y="145" text-anchor="middle" font-size="9">1</text>
+          <text x="150" y="115" text-anchor="middle" font-size="9">2</text>
+          <text x="150" y="95" text-anchor="middle" font-size="9">3</text>
+          <text x="150" y="75" text-anchor="middle" font-size="9">4</text>
+          <text x="150" y="55" text-anchor="middle" font-size="9">5</text>
+          <text x="150" y="35" text-anchor="middle" font-size="9">6</text>
+          <text x="150" y="15" text-anchor="middle" font-size="9" class="lbl-hi">7</text>
+        </svg>
+      </figure>
+      <ol class="steps" style="counter-reset:s">
+        <li>file touched</li>
+        <li>module &amp; package boundaries crossed</li>
+        <li>data structures read or written</li>
+        <li>API contracts exposed or consumed</li>
+        <li>runtime paths altered</li>
+        <li>historical failure correlations of adjacent code</li>
+        <li>system-level always-on invariants</li>
+      </ol>
+    </div>
+    <p class="cap">Output: a risk-weighted list &mdash; reason and dimension per test &mdash; kept legible in the run folder.</p>
+  </div></section>
+
+  <!-- 12 · FNR TARGETS -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">RADAR</p>
+    <h2>Every test carries a false-negative-rate target</h2>
+    <p class="lede">A false negative is a run that passes when the code is actually broken. Coverage never tracks this &mdash; it measures what a test <em>touches</em>, not what it <em>catches</em>. RADAR binds each test to an FNR target by priority tier, measured empirically over the test's history.</p>
+    <div class="well"><span class="k">tier</span>                       <span class="k">FNR target</span>
+critical invariant          <span class="am">&asymp; 0</span>
+high-blast-radius code      tighter
+low-priority code           loosest</div>
+    <p class="kicker">If a test drifts above its target, RADAR flags <span style="color:var(--amber)">the test</span> for repair &mdash; not the code it covers.</p>
+  </div></section>
+
+  <!-- 13 · FLOORS -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">RADAR</p>
+    <h2>Floors the selector may never undercut</h2>
+    <ul class="list">
+      <li>no data loss on the primary write path</li>
+      <li>no authorization bypass on any privileged operation</li>
+      <li>no unbounded resource consumption in any request handler</li>
+      <li>no silent corruption of persisted state</li>
+    </ul>
+    <p class="lede">Each critical invariant has anchor tests. RADAR is <strong>forbidden</strong> from selecting them away, whatever the blast-radius analysis says.</p>
+    <p class="kicker">Intelligence in test selection is welcome. <span>Intelligence that lets a critical-invariant regression through is not.</span></p>
+  </div></section>
+
+  <!-- 14 · CLIP 1 -->
+  <section class="slide"><div class="stage">
+    <div class="clip-cue"><span class="play"></span> Clip 1 &mdash; RADAR impact selection</div>
+    <p class="statement sm lo">Diff a file &rarr; the selector computes blast radius &rarr; a risk-weighted slice of the suite, each test carrying the reasons it was chosen and the dimension it covers.</p>
+  </div></section>
+
+  <!-- 15 · RUN FOLDER -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">RADAR</p>
+    <h2>The run folder is the audit trail</h2>
+    <div class="well"><span class="k"># run-folder/&lt;diff-hash&gt;/</span>
+selection.json        <span class="k">— tests RADAR chose for this diff</span>
+reasons.json          <span class="k">— why each test, which dimension</span>
+fnr.json              <span class="k">— target vs observed rate, per test</span>
+anchors.json          <span class="k">— critical-invariant tests enforced</span>
+executor.log          <span class="k">— run traces</span>
+receipt               <span class="am">— hashed against the diff</span></div>
+    <p class="kicker">Six months later, an auditor reads not just <span>which tests ran</span> &mdash; but why each one was chosen.</p>
+  </div></section>
+
+  <!-- 16 · ACT IIb -->
+  <section class="slide slide--divider"><div class="stage">
+    <p class="eyebrow">Act II &middot; b</p>
+    <h2 class="act-title">The Convergence Loop</h2>
+    <p class="cap">The primitive that finally makes left-shift real rather than aspirational.</p>
+  </div></section>
+
+  <!-- 17 · EIGHT STEPS -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">The Convergence Loop</p>
+    <h2>Eight steps, in order &mdash; product code and test code both first-class</h2>
+    <div class="grid-2 tight">
+      <figure class="dia" aria-hidden="true">
+        <svg viewBox="0 0 260 260" role="img">
+          <circle class="conn" cx="130" cy="130" r="96"></circle>
+          <path class="conn conn-return" d="M130 34 A96 96 0 0 0 46 178"></path>
+          <g font-size="10">
+            <circle class="node" cx="130" cy="34" r="15"></circle><text x="130" y="38" text-anchor="middle" class="lbl-hi">1</text>
+            <circle class="node" cx="198" cy="62" r="15"></circle><text x="198" y="66" text-anchor="middle">2</text>
+            <circle class="node" cx="226" cy="130" r="15"></circle><text x="226" y="134" text-anchor="middle">3</text>
+            <circle class="node" cx="198" cy="198" r="15"></circle><text x="198" y="202" text-anchor="middle">4</text>
+            <circle class="node" cx="130" cy="226" r="15"></circle><text x="130" y="230" text-anchor="middle">5</text>
+            <circle class="node" cx="62" cy="198" r="15"></circle><text x="62" y="202" text-anchor="middle">6</text>
+            <circle class="node" cx="34" cy="130" r="15"></circle><text x="34" y="134" text-anchor="middle">7</text>
+            <circle class="node node-hi" cx="62" cy="62" r="15"></circle><text x="62" y="66" text-anchor="middle" class="lbl-hi">8</text>
+          </g>
+        </svg>
+      </figure>
+      <ol class="steps">
+        <li>Agent hands off the diff <b>+ full context</b> &mdash; prompts, codebase, product and test diffs</li>
+        <li>Cross-family jury reviews in <b>two lanes</b> &mdash; product code, test code</li>
+        <li>Approved test-code changes built into the RADAR suite; <b>RADAR runs</b> &rarr; failures + gaps</li>
+        <li>Findings + failures &rarr; work-item list, <b>three lanes, one owner each</b></li>
+        <li>Owners fix in parallel &mdash; no-rerun logs carry enough detail for <b>one-shot fixes</b></li>
+        <li>Each owner runs the tests covering its items; confirms green</li>
+        <li>Jury <b>re-reviews the fixes</b> across all three lanes</li>
+        <li>Follow-up RADAR run + coverage check &rarr; clean = <b>terminate</b>; new issues = re-enter at step 2</li>
+      </ol>
+    </div>
+  </div></section>
+
+  <!-- 18 · WHY ONLY NOW -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">The Convergence Loop</p>
+    <h2>The loop the old economics could not afford</h2>
+    <p class="lede">In the human-paced world, iterating until residual defects reached zero was theoretically correct and <strong>economically impossible</strong> &mdash; each iteration cost days. Teams shipped with residual defects because the alternative was to never ship.</p>
+    <p class="flow">cost per iteration: &nbsp; human&#8209;days &nbsp;<b>&rarr;</b>&nbsp; agent&#8209;minutes + tokens</p>
+    <p class="kicker">It <span style="color:var(--amber)">has to</span> run in the agent-paced world &mdash; because leaving residual defects in a diff wastes the one scarce resource left: <span>human reviewer attention</span>.</p>
+  </div></section>
+
+  <!-- 19 · CURVE -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">The Convergence Loop</p>
+    <h2>The curve replaces coverage</h2>
+    <figure class="dia wide" aria-hidden="true">
+      <svg viewBox="0 0 640 300" role="img">
+        <line class="curve-grid" x1="60" y1="40"  x2="620" y2="40"></line>
+        <line class="curve-grid" x1="60" y1="120" x2="620" y2="120"></line>
+        <line class="curve-grid" x1="60" y1="200" x2="620" y2="200"></line>
+        <line class="curve-grid" x1="60" y1="260" x2="620" y2="260"></line>
+        <polyline class="curve" points="80,52 260,168 440,236 610,260"></polyline>
+        <circle class="pt" cx="80"  cy="52"  r="5"></circle>
+        <circle class="pt" cx="260" cy="168" r="5"></circle>
+        <circle class="pt" cx="440" cy="236" r="5"></circle>
+        <circle class="pt-end" cx="610" cy="260" r="6"></circle>
+        <g font-size="13" fill="var(--slate)">
+          <text x="80"  y="38" text-anchor="middle" class="lbl-hi">2,094</text>
+          <text x="260" y="154" text-anchor="middle" class="lbl-hi">445</text>
+          <text x="440" y="222" text-anchor="middle" class="lbl-hi">10</text>
+          <text x="610" y="246" text-anchor="middle" fill="var(--pass)">0</text>
+          <text x="80"  y="286" text-anchor="middle">iter 0</text>
+          <text x="260" y="286" text-anchor="middle">iter 1</text>
+          <text x="440" y="286" text-anchor="middle">iter 2</text>
+          <text x="610" y="286" text-anchor="middle">iter 3</text>
+        </g>
+      </svg>
+    </figure>
+    <p class="lede">What replaces coverage is the <em>shape</em> of this curve &mdash; how many iterations to zero, and what defect population resolved at each step.</p>
+    <p class="cap">residual ratios 0.21 &rarr; 0.022 &rarr; 0.0 · one production convergence campaign · a multi-tenant B2B SaaS platform</p>
+  </div></section>
+
+  <!-- 20 · CLIP 2 -->
+  <section class="slide"><div class="stage">
+    <div class="clip-cue"><span class="play"></span> Clip 2 &mdash; the gate run</div>
+    <p class="statement sm lo">Every gate green in ~3 minutes &mdash; then the receipt, <span class="hi">hashed against the diff</span>. A diff that no longer matches its receipt cannot pass.</p>
+  </div></section>
+
+  <!-- 21 · ACT IIc -->
+  <section class="slide slide--divider"><div class="stage">
+    <p class="eyebrow">Act II &middot; c</p>
+    <h2 class="act-title">The security gate:<br><span style="color:var(--slate)">CI vs. nightly</span></h2>
+  </div></section>
+
+  <!-- 22 · ARCHITECTURE FIRST -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">Architecture first</p>
+    <h2>Remove the attack surface structurally &mdash; then automate proof that it stays removed.</h2>
+    <ul class="list">
+      <li>no admin panel &mdash; none exists to attack</li>
+      <li>sessions in Postgres, not a cache tier</li>
+      <li>REST only &mdash; no introspection surface</li>
+      <li>database on a private socket &mdash; no public IP</li>
+      <li>UUID identifiers &mdash; no sequential enumeration</li>
+      <li>schema-per-tenant &mdash; isolation enforced in middleware</li>
+    </ul>
+    <p class="kicker">Security is not purely a testing exercise. <span>It is removing the class of failure, then verifying it stays gone.</span></p>
+  </div></section>
+
+  <!-- 23 · SPLIT -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">The penetration suite</p>
+    <h2>Whitebox on every commit. Blackbox nightly.</h2>
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Whitebox &mdash; every commit</h3>
+        <p style="color:var(--slate);font-size:.84rem">source · config · build artifacts · container defs · dependency graph</p>
+        <div class="chips">
+          <span class="chip">SQL-injection patterns</span><span class="chip">XSS exposure</span><span class="chip">secret leakage</span><span class="chip">auth-coverage gaps</span><span class="chip">unsafe shell execution</span><span class="chip">container posture</span><span class="chip">dependency risk</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Blackbox &mdash; nightly</h3>
+        <p style="color:var(--slate);font-size:.84rem">the deployed API as a client or attacker sees it</p>
+        <div class="chips">
+          <span class="chip">security headers</span><span class="chip">method allowlists</span><span class="chip">oversized payloads</span><span class="chip">auth enforcement</span><span class="chip">brute-force handling</span><span class="chip">path traversal</span><span class="chip">CORS behavior</span><span class="chip">session-cookie attributes</span>
+        </div>
+      </div>
+    </div>
+    <p class="kicker">Whitebox and blackbox are complements. <span>A pass in one is not a waiver for the other.</span></p>
+  </div></section>
+
+  <!-- 24 · WHY SPLIT -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">The penetration suite</p>
+    <h2>Why whitebox on commit, blackbox nightly</h2>
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Whitebox = pattern-matching</h3>
+        <p>Deterministic, seconds, no infrastructure. A developer gets the verdict before the diff leaves their machine.</p>
+      </div>
+      <div class="panel">
+        <h3>Blackbox = live system</h3>
+        <p>Needs a running server, a real database, an HTTP listener. Per commit that is minutes of spin-up and contention across concurrent developers.</p>
+      </div>
+    </div>
+    <p class="kicker">Continuous &mdash; <span>without pretending the same depth is economically sensible for every commit.</span></p>
+  </div></section>
+
+  <!-- 25 · LIVE -->
+  <section class="slide"><div class="stage">
+    <div class="clip-cue live"><span class="play"></span> Live &mdash; the whitebox run</div>
+    <div class="well"><span class="k">$</span> run whitebox
+<span class="pass">&check;</span> query parameterization        <span class="pass">&check;</span> secret-leak scan
+<span class="pass">&check;</span> auth coverage / new route     <span class="pass">&check;</span> no unsafe shell path
+<span class="pass">&check;</span> dependency manifest           <span class="pass">&check;</span> container posture
+
+<span class="am">WHITEBOX VERDICT: PASS</span>   <span class="k">~10s</span></div>
+    <p class="lede">This is what runs on every single commit. <strong>If it fails, the commit does not land.</strong></p>
+  </div></section>
+
+  <!-- 26 · THE CATCH -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">The catch that proves it works</p>
+    <h2>One query used quote-escaping instead of parameterization &mdash; with real user input.</h2>
+    <p class="lede">Not exploitable in the tested configuration. But it was the one place a future developer copying that pattern could introduce a real injection. We fixed it &mdash; and the <em>finding class</em> is now a permanent regression test.</p>
+    <p class="kicker">That specific mistake <span style="color:var(--amber)">can never ship again.</span></p>
+  </div></section>
+
+  <!-- 27 · ACT III -->
+  <section class="slide slide--divider"><div class="stage">
+    <p class="eyebrow">Act III</p>
+    <h2 class="act-title">Closure discipline</h2>
+    <p class="cap">A dashboard full of green checks does not mean the test system is honest.</p>
+  </div></section>
+
+  <!-- 28 · NOT CLOSURE -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">Closure</p>
+    <h2>A failure is not resolved because a later run turns green.</h2>
+    <ol class="steps">
+      <li><b>Preserve the run artifact</b> &mdash; the evidence a reviewer relies on</li>
+      <li><b>Investigate the first failure</b> in stable order &mdash; before changing ten things and re-running</li>
+      <li><b>Add a counter-example</b> that would catch recurrence &mdash; the class, not the exact request</li>
+      <li><b>Re-verify cross-agent</b> when the risk warrants it &mdash; a different family challenges the fix</li>
+    </ol>
+  </div></section>
+
+  <!-- 29 · JURY -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">Cross-Model Convergence Review</p>
+    <h2>Three model families. No majority vote.</h2>
+    <div class="grid-2 tight">
+      <figure class="dia" aria-hidden="true">
+        <svg viewBox="0 0 260 240" role="img">
+          <path class="conn" d="M130 44 A96 96 0 0 1 213 178"></path>
+          <path class="conn" d="M213 178 A96 96 0 0 1 47 178"></path>
+          <path class="conn" d="M47 178 A96 96 0 0 1 130 44"></path>
+          <g font-size="10">
+            <circle class="node node-hi" cx="130" cy="44"  r="20"></circle><text x="130" y="48" text-anchor="middle" class="lbl-hi">A</text>
+            <circle class="node node-hi" cx="213" cy="178" r="20"></circle><text x="213" y="182" text-anchor="middle" class="lbl-hi">B</text>
+            <circle class="node node-hi" cx="47"  cy="178" r="20"></circle><text x="47"  y="182" text-anchor="middle" class="lbl-hi">C</text>
+          </g>
+        </svg>
+      </figure>
+      <div style="display:grid;gap:.9rem">
+        <p class="lede">A single agent reviewing another from the same model family inherits the <strong>same blind spots</strong> as the code. A jury drawn one juror per family is the shape most likely to surface what any one would miss.</p>
+        <p class="lede">Findings are not majority-voted &mdash; they converge into one merged action list where <em>every divergent finding carries an explicit owner</em>. The human adjudicates what the jurors cannot resolve.</p>
+      </div>
+    </div>
+    <p class="cap">Jurors also route work to each other &mdash; observed handoffs, not a fixed taxonomy.</p>
+  </div></section>
+
+  <!-- 30 · RESEARCH -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">Why cross-family, not a bigger single judge</p>
+    <h2>The evidence has firmed up quickly</h2>
+    <ul class="list">
+      <li>Ensemble ceiling <b>~83%</b> above the best single model; naive consensus voting captures almost none of it; diversity-preserving aggregation realizes <b>~95%</b>. <span style="color:var(--slate-dim)">&mdash; arXiv 2510.21513</span></li>
+      <li>A three-model panel across Anthropic, OpenAI, Google beat a single larger judge on six datasets at <b>~1/7 the cost</b>; same-family juries share correlated errors. <span style="color:var(--slate-dim)">&mdash; Verga et al., PoLL</span></li>
+      <li>Cross-LLM verification on secure-code generation: <b>up to 47%</b> improvement over single-model baselines when the reviewer is from a different family. <span style="color:var(--slate-dim)">&mdash; arXiv 2603.22717</span></li>
+    </ul>
+  </div></section>
+
+  <!-- 31 · GATE -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">The gate</p>
+    <h2>A diff that no longer matches its receipt cannot pass.</h2>
+    <p class="lede">Most teams treat the CI run and the commit as two loosely coupled events &mdash; nothing binds the passing run to the change that shipped. At agent velocity, that is a load-bearing weakness.</p>
+    <div class="well"><span class="k">commit trailer</span>
+Attested-Run: run-folder/<span class="am">a1b2c3d4</span>
+Diff-Hash:    <span class="am">a1b2c3d4</span>   <span class="k">— matches staged diff</span>
+Verdict:      <span class="pass">PASS</span>
+
+<span class="k">local hook rejects a commit with no receipt</span>
+<span class="k">server-side hook re-verifies against the pushed diff</span></div>
+  </div></section>
+
+  <!-- 32 · WORKS IS NOT A TEST -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">Closure</p>
+    <h2>"Works" is not a test.</h2>
+    <table class="t">
+      <thead><tr><th>Assertion</th><th>Counter-example</th></tr></thead>
+      <tbody>
+        <tr><td>"Authorization works"</td><td>missing, expired, wrong-role, wrong-tenant credentials</td></tr>
+        <tr><td>"Cache is safe"</td><td>identical request across two tenants, workspaces, date ranges</td></tr>
+        <tr><td>"Contract is compatible"</td><td>existing client fixture against the changed deployment</td></tr>
+        <tr><td>"Input validation works"</td><td>malformed, oversized, encoded, boundary inputs</td></tr>
+      </tbody>
+    </table>
+    <p class="kicker">The point of a test is not to confirm the story you already believe. <span>It is to create evidence that could disprove it.</span></p>
+  </div></section>
+
+  <!-- 33 · NOT AUTOMATED -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">Limits</p>
+    <h2>What we did not automate &mdash; and why</h2>
+    <p class="lede">Reconnaissance, timing attacks, workflow-bypass reasoning, manual business-logic testing &mdash; these genuinely need a human, so they stay scoped to a third-party engagement rather than faked as automated. The automated suite tells you what changed since the last engagement; the engagement tells you what a skilled human finds with more creativity than a script.</p>
+    <p class="lede"><strong>Never automated:</strong> risk acceptance, business authorization, customer-impact trade-offs, final approval of high-blast-radius or irreversible production actions.</p>
+    <p class="kicker">Ford rehired veteran quality inspectors after going AI-only &mdash; then took #1 in initial quality for the first time since 2010. <span>Automation plus deliberate human control points, not instead of them.</span></p>
+  </div></section>
+
+  <!-- 34 · DEMO SETUP -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">Live demo</p>
+    <h2>One AI-generated pull request. Eight surfaces. One seeded defect.</h2>
+    <div class="well"><span class="k">sample app</span>   multi-tenant usage service
+<span class="k">change</span>       add  <span class="am">GET /v1/accounts/{accountId}/usage-summary</span>
+<span class="k">surfaces</span>     route · OpenAPI contract · usage:read authz ·
+             tenant query · cache key · SDK · flag · telemetry
+<span class="k">defect</span>       <span class="fail">the cache key omits account identity</span>
+             &rarr; under the right request sequence, Tenant B
+               receives a response cached for Tenant A</div>
+    <p class="cap">The code looks plausible. The unit tests are green. The invariant is not.</p>
+  </div></section>
+
+  <!-- 35 · DEMO WALK -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">Live demo</p>
+    <h2>PR &rarr; impact map &rarr; gates &rarr; invariant failure &rarr; fix &rarr; re-verify &rarr; receipt</h2>
+    <div class="well"><span class="pass">&check;</span> fast per-commit gates            <span class="k">PASS · 42s</span>
+<span class="am">&rarr;</span> RADAR selects 9 tests
+   <span class="pass">&check;</span> contract · auth-matrix · date-boundaries · client-smoke
+   <span class="fail">&times;</span> <span class="fail">cache.usage_summary.key_partition</span>   <span class="k">FIRST FAILURE</span>
+<span class="pass">&check;</span> whitebox · blackbox              <span class="k">PASS — security green while isolation fails</span>
+<span class="am">&rarr;</span> preserve run artifact             <span class="k">closure_state: open</span>
+<span class="am">&rarr;</span> cache key gains account + role · counter-example test added
+<span class="pass">&check;</span> RADAR 9/9 · independent verifier <span class="pass">PASS</span>
+<span class="am">&rarr;</span> receipt: <span class="am">admissible_for_merge</span>  &ne;  ready_for_rollout</div>
+  </div></section>
+
+  <!-- 36 · ACT IV -->
+  <section class="slide slide--divider"><div class="stage">
+    <p class="eyebrow">Act IV</p>
+    <h2 class="act-title">Take home</h2>
+  </div></section>
+
+  <!-- 37 · THREE THINGS -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">Three things</p>
+    <h2>If you can't name your guardrails, you're not doing AI governance.</h2>
+    <ol class="steps">
+      <li><b>The layered model</b> &mdash; fast per-commit gates catch most regressions in ~3 min; RADAR impact-selects the risk-weighted subset; the Convergence Loop drives residual defects to zero before human review.</li>
+      <li><b>The split</b> &mdash; CI: deterministic, fast, no infrastructure (whitebox). Nightly: live server, full HTTP stack, full attack simulation (blackbox). Know which is which and why.</li>
+      <li><b>Closure discipline</b> &mdash; every test carries a false-negative-rate target; every critical invariant has a mandatory floor; every commit carries a receipt bound to its exact diff; every fix states what would prove it wrong.</li>
+    </ol>
+  </div></section>
+
+  <!-- 38 · Q&A -->
+  <section class="slide"><div class="stage">
+    <p class="eyebrow">Start small</p>
+    <p class="statement sm lo">one repository &middot; one invariant suite &middot; one run artifact &middot; one class of AI-generated change</p>
+    <p class="cap">agenticfactory.ai &mdash; the framework&nbsp;&nbsp;/&nbsp;&nbsp;deepankardas.substack.com &mdash; the three-part series&nbsp;&nbsp;/&nbsp;&nbsp;OWASP WSTG coverage matrix</p>
+    <p class="statement hi" style="font-size:3rem;margin-top:.4rem">Questions.</p>
+    <p class="lede">What sensitive API surface would you pilot first?</p>
+  </div></section>
+
+</main>
+
+<p class="hint" id="hint">&larr; &rarr; navigate &middot; <b>S</b> speaker notes &middot; <b>F</b> fullscreen</p>
+
+<nav class="nav" aria-label="Slide navigation">
+  <button class="nav__btn" id="prev" aria-label="Previous slide" title="Back (&larr;)">&#10094;</button>
+  <span class="nav__count" id="count">01 / 38</span>
+  <button class="nav__btn" id="next" aria-label="Next slide" title="Forward (&rarr;)">&#10095;</button>
+  <span class="nav__sep"></span>
+  <button class="nav__btn nav__btn--wide" id="notesBtn" aria-label="Toggle speaker notes" title="Speaker notes (S)">notes</button>
+  <button class="nav__btn nav__btn--fs" id="fsBtn" aria-label="Enter full screen" title="Full screen (F)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H4a1 1 0 0 0-1 1v4M16 3h4a1 1 0 0 1 1 1v4M8 21H4a1 1 0 0 1-1-1v-4M16 21h4a1 1 0 0 0 1-1v-4"/></svg></button>
+</nav>
+
+<aside class="notes" id="notes" aria-live="polite">
+  <button class="notes-close" id="notesClose">esc</button>
+  <h4 id="notesLabel">Speaker notes</h4>
+  <div class="body" id="notesBody"></div>
+</aside>
+
+<script>
+(function(){
+  "use strict";
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var total = slides.length;
+  var rail = document.getElementById('rail');
+  var count = document.getElementById('count');
+  var prev = document.getElementById('prev');
+  var next = document.getElementById('next');
+  var hint = document.getElementById('hint');
+  var notes = document.getElementById('notes');
+  var notesBody = document.getElementById('notesBody');
+  var notesLabel = document.getElementById('notesLabel');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var idx = 0;
+  var LS = 'adm-deck-v2';
+
+  var NOTES = [
+    "Open flat. Engineering and verification session, not a product pitch. The problem: agents now generate API code faster than conventional testing and review can establish whether it is safe to ship. Not whether agents can write an endpoint — they can. What happens next.",
+    "Cold open. Let the numbers land before you speak. The question is rhetorical — the rest of the talk answers it. ~40 seconds, then move.",
+    "Act I. The divergence thesis: the naive loop lets new bugs land faster than old ones close. AI did not cause this — it accelerated a methodology failure that already existed in human-only teams.",
+    "Faros AI 2026 telemetry. Point at the two green stats, then the wall of red. 'Throughput measures what was shipped, not what survived.' Land the quote and pause.",
+    "Twenty years of shift-left promises. The reason it failed is structural: the pipeline terminated on a calendar. Sprints ended, code shipped with known defects. Set up the Convergence Loop as the thing that changes the exit condition.",
+    "The two failure modes are the same failure: no defensible middle. Repeat 'smallest credible corpus' — not 'smallest set.' Bridge to RADAR.",
+    "Gartner, June 2026. Say it once. The cancellations are a methodology problem — convergence is a system property, not something a better prompt buys. Methodology first, capability second.",
+    "Name all three primitives once, as a unit, in diff-flow order. The audience now has the vocabulary. The commit-attested gate sits above the pipeline; the delivery dashboard rolls per-diff work up to the roadmap.",
+    "Act II·a divider. Let the sweep run for a beat. RADAR = Risk-Aware Dependency Analysis for Rapid Verification. Deepest section — slow down.",
+    "The core claim: run exactly the right subset, with a defensible argument for sufficiency, and floors nothing can undercut. Contrast with a file-based selector, which misses indirect risk — a cache key turning a correct query into a cross-tenant leak.",
+    "Walk the seven dimensions, pointing at each ring. The output is a risk-weighted list where each test carries its reason and its dimension. That legibility is what makes the selection auditable.",
+    "The concept no other framework names. A false negative is a test that passes while the code is broken. Coverage measures what a test touches; FNR measures what it catches. If a test drifts above its target, RADAR flags the test, not the code.",
+    "Read the four floors slowly — the slide the security audience is waiting for. RADAR is forbidden from selecting anchor tests away. 'Intelligence that lets a critical-invariant regression through is not welcome.'",
+    "Clip 1 (~2 min). Show: diff a file → the selector computes blast radius → a slice of the full suite, reasons per test on screen. Contrast the slice against the full-suite total. If it stalls, narrate over the last frame.",
+    "The run folder is the audit substrate. Everything a regulator needs — not just which tests ran, but why each was chosen, its FNR target and observed rate, and the receipt hashed against the diff.",
+    "Act II·b divider. The Convergence Loop is the primitive the other two orbit. It is what makes left-shift real rather than aspirational.",
+    "Walk the eight steps as a procedure, pointing at the ring. Emphasise step 2 (two lanes — product and test code), step 5 (one-shot fixes from no-rerun logs), step 8 (clean = terminate; new issues re-enter at step 2). The dashed arc is the loop-back.",
+    "The economic argument. This loop was theoretically correct and impossible in the human-paced world. Agent velocity moved cost-per-iteration from human-days to agent-minutes. A genuine invention of the agentic era, not a rename.",
+    "Let the curve draw. 2,094 → 445 → 10 → 0 across three iterations on a multi-tenant B2B SaaS platform. The metric that replaces coverage is the shape of this curve — iterations to zero, and what resolved at each step.",
+    "Clip 2 (~3 min). Show the gate run: every gate green in ~3 minutes, then the receipt bound to the exact diff. 'A diff that no longer matches its receipt cannot pass.'",
+    "Act II·c divider. Take the security-expert stance hardest here. Architecture first, testing second.",
+    "What structurally cannot happen. Walk the list — each item is a class of attack removed by design, not by a test. CONFIRM these specifics are safe to state publicly before the talk.",
+    "The CI/nightly split. Whitebox categories: SQLi patterns, XSS, secret leakage, auth-coverage gaps, unsafe shell, container posture, dependency risk. Blackbox: headers, method allowlists, oversized payloads, auth enforcement, brute-force, path traversal, CORS, cookies. Say 'about seventy-five checks' at most once; do not read counts off the slide.",
+    "Why the split is by cadence, not importance. Whitebox is pattern-matching against source — deterministic, seconds, no infra. Blackbox needs a live server — minutes of spin-up and contention per commit. Nightly gives full coverage at zero developer friction.",
+    "The anchor moment — run it live. `run whitebox` → named OWASP categories in the terminal → PASS in ~10s. 'This is what runs on every single commit. If it fails, the commit does not land.' Have a screen capture ready as fallback.",
+    "The catch that proves it works. One analytics query used quote-escaping instead of parameterization with real user input — not exploitable as configured, but the one copy-paste seed for a future real injection. Fixed, and the finding class is now a permanent regression test.",
+    "Act III divider. A dashboard full of green does not mean the test system is honest. Conceptual transition — slow down.",
+    "The four requirements are a real sequence — hence numbered. Preserve the artifact, investigate the first failure in stable order, add a counter-example for the class, re-verify cross-agent. Rerunning until green is not closure.",
+    "The jury. A same-family reviewer inherits the same blind spots as the code. No majority vote — findings converge to one owned action list. Families are A/B/C on the diagram; the rotation in practice is Claude reviews GPT, GPT reviews Gemini, Gemini reviews Claude, or equivalent. The cross-model handoffs are observed behaviour, not a fixed taxonomy — the taxonomy paper is still in preparation.",
+    "The research backs the shape. Diversity-preserving aggregation captures ~95% of the ensemble ceiling; naive voting captures almost none. A three-family panel beat a single larger judge at ~1/7 cost. Cross-family review on secure code: up to 47% better. Cite the arXiv numbers precisely.",
+    "The commit-attested gate. Nothing in most repos binds a passing run to the diff that shipped. The gate admits a commit only if its trailer carries a receipt whose recorded diff-hash matches the staged diff and whose verdict is a pass. Local hook plus independent server-side re-verify. Receipt lives next to the code under a team-owned retention policy.",
+    "'Works' is not a test. Walk the table. Each left cell is a story the agent believes; each right cell is the evidence that could disprove it. Preview: the demo shows a cache-key failure and its counter-example.",
+    "What we did not automate — honesty about limits. The OWASP WSTG cases left to humans: recon, timing, workflow bypass, manual logic. Never automated: risk acceptance, business authorization, high-blast-radius approval. Close on Ford — automation plus human control points, not instead of them. CONFIRM the Ford stat wording.",
+    "Demo setup. Small multi-tenant usage service; an agent PR adds a usage-summary endpoint touching eight surfaces. Seeded defect: the cache key omits account identity, so Tenant B can receive Tenant A's cached response. The code looks plausible; unit tests are green.",
+    "Demo walk (or fallback if live time is tight). Fast gates pass — not sufficient. RADAR selects 9; the cache-partition invariant fails; that is the first failure. Whitebox and blackbox both pass — security green while isolation fails, which is why the layered system exists. Preserve the artifact, add the counter-example (the class, not the request), fix, re-run the selected corpus, independent verifier passes. Receipt: admissible-for-merge, not ready-for-unrestricted-rollout.\n\nRUNBOOK: gate:fast → radar:select → radar:run → security:whitebox → security:blackbox → checkout fix branch → radar:run → verify:independent → show final receipt.\nKEEP: the impact map, the selected-vs-floor distinction, the seeded failure, the counter-example, the re-verify, the fast-gate-vs-milestone line.\nCUT IN ORDER: the live curl leak demo, the live whitebox command, the live blackbox command, the YAML walk.",
+    "Act IV divider. Short.",
+    "Three photographable points. 'If you can't name your guardrails, you're not doing AI governance — you're funding next year's cancelled project.' Land each numbered item, then stop.",
+    "Resources and Q&A. Start with one repo, one invariant suite, one run artifact, one class of change. QR to agenticfactory.ai and the Substack three-part series (diagnosis · manual · multi-agent coordination). Open with the pilot-surface question.\n\nQ&A PREP —\n'why not run the full suite every change?': too slow, too weakly tied to the precise change; reserve it for milestones.\n'how do you know the selected corpus is sufficient?': reachability + mandatory floors + risk-mandated tests + milestone validation + a learning loop that turns escapes into new rules.\n'does this replace pen testing?': no — it makes it continuous and change-aware; the human engagement stays.\n'works without multiple agents?': yes — core is layered verification, impact selection, run artifacts, closure; cross-model review is the extra independent-challenge path.\n'what should never be automated?': risk acceptance, business authorization, customer-impact trade-offs, ambiguous incident calls, final approval of high-blast-radius or irreversible actions."
+  ];
+
+  function fit(){
+    var slide = slides[idx];
+    var stage = slide.querySelector('.stage');
+    stage.style.transform = 'none';
+    stage.style.setProperty('--k', 1);
+    var cs = getComputedStyle(slide);
+    var padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    var padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    var availW = slide.clientWidth - padX;
+    var availH = slide.clientHeight - padY;
+    var natW = stage.offsetWidth;
+    var natH = stage.offsetHeight;
+    if (!natW || !natH){ stage.style.transform = ''; return; }
+    var k = Math.min(1, availW / natW, availH / natH);
+    if (!isFinite(k) || k <= 0) k = 1;
+    k = Math.max(k, 0.4);
+    stage.style.setProperty('--k', k);
+    stage.style.transform = 'scale(' + k + ')';
+  }
+
+  function show(n){
+    idx = Math.max(0, Math.min(total - 1, n));
+    slides.forEach(function(s, i){ s.classList.toggle('is-current', i === idx); });
+    count.textContent = String(idx + 1).padStart(2, '0') + ' / ' + total;
+    rail.style.width = (idx / (total - 1) * 100) + '%';
+    prev.disabled = idx === 0;
+    next.disabled = idx === total - 1;
+    if (notes.classList.contains('open')) fillNotes();
+    requestAnimationFrame(function(){ fit(); requestAnimationFrame(fit); });
+    try { localStorage.setItem(LS, JSON.stringify({ i: idx, n: notes.classList.contains('open') })); } catch(e){}
+  }
+
+  function fillNotes(){
+    notesLabel.textContent = 'Speaker notes — slide ' + String(idx + 1).padStart(2, '0');
+    notesBody.textContent = NOTES[idx] || '—';
+  }
+  function toggleNotes(force){
+    var open = (typeof force === 'boolean') ? force : !notes.classList.contains('open');
+    notes.classList.toggle('open', open);
+    if (open) fillNotes();
+    try { var s = JSON.parse(localStorage.getItem(LS) || '{}'); s.n = open; localStorage.setItem(LS, JSON.stringify(s)); } catch(e){}
+  }
+
+  var fsBtn = document.getElementById('fsBtn');
+  function fsElement(){ return document.fullscreenElement || document.webkitFullscreenElement || null; }
+  function toggleFs(){
+    var el = document.documentElement;
+    if (!fsElement()){
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+  }
+  var FS_IN  = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H4a1 1 0 0 0-1 1v4M16 3h4a1 1 0 0 1 1 1v4M8 21H4a1 1 0 0 1-1-1v-4M16 21h4a1 1 0 0 0 1-1v-4"/></svg>';
+  var FS_OUT = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3"/></svg>';
+  function syncFs(){
+    var on = !!fsElement();
+    fsBtn.innerHTML = on ? FS_OUT : FS_IN;
+    fsBtn.setAttribute('aria-label', on ? 'Exit full screen' : 'Enter full screen');
+    fsBtn.title = (on ? 'Exit full screen' : 'Full screen') + ' (F)';
+    requestAnimationFrame(fit);
+  }
+  document.addEventListener('fullscreenchange', syncFs);
+  document.addEventListener('webkitfullscreenchange', syncFs);
+
+  prev.addEventListener('click', function(){ show(idx - 1); });
+  next.addEventListener('click', function(){ show(idx + 1); });
+  fsBtn.addEventListener('click', toggleFs);
+  document.getElementById('notesBtn').addEventListener('click', function(){ toggleNotes(); });
+  document.getElementById('notesClose').addEventListener('click', function(){ toggleNotes(false); });
+
+  document.addEventListener('keydown', function(e){
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown' || k === ' '){ e.preventDefault(); show(idx + 1); }
+    else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp'){ e.preventDefault(); show(idx - 1); }
+    else if (k === 'Home'){ e.preventDefault(); show(0); }
+    else if (k === 'End'){ e.preventDefault(); show(total - 1); }
+    else if (k === 's' || k === 'S' || k === 'n' || k === 'N'){ e.preventDefault(); toggleNotes(); }
+    else if (k === 'Escape'){ toggleNotes(false); }
+    else if (k === 'f' || k === 'F'){ e.preventDefault(); toggleFs(); }
+  });
+
+  // pointer swipe
+  var sx = 0, sy = 0, tracking = false;
+  document.addEventListener('pointerdown', function(e){ if (e.target.closest('.nav') || e.target.closest('.notes')) return; sx = e.clientX; sy = e.clientY; tracking = true; });
+  document.addEventListener('pointerup', function(e){
+    if (!tracking) return; tracking = false;
+    var dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) show(idx + (dx < 0 ? 1 : -1));
+  });
+
+  var rt;
+  window.addEventListener('resize', function(){ clearTimeout(rt); rt = setTimeout(fit, 120); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  setTimeout(function(){ hint.classList.add('gone'); }, 7000);
+
+  var start = 0;
+  try {
+    var saved = JSON.parse(localStorage.getItem(LS) || '{}');
+    if (typeof saved.i === 'number' && saved.i > 0 && saved.i < total) start = saved.i;
+    if (saved.n) requestAnimationFrame(function(){ toggleNotes(true); });
+  } catch(e){}
+  show(start);
+})();
+</script>

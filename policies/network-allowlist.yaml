@@ -1,0 +1,39 @@
+# Enforcer — Network Host Allowlist
+#
+# Hosts in the "allow" list pass network policy without approval.
+# Hosts in the "warning" list require human approval.
+# All other hosts are denied by org.block_non_allowlisted_hosts.
+
+allowlist:
+  # Package registries
+  - registry.npmjs.org
+  - registry.yarnpkg.com
+  - pypi.org
+
+  # Source control
+  - github.com
+  - api.github.com
+  - gitlab.com
+
+  # AI providers (used by the governed agent)
+  - api.anthropic.com
+  - api.openai.com
+
+  # Cloud APIs
+  - "*.googleapis.com"
+  - "*.amazonaws.com"
+
+  # Common development
+  - localhost
+  - "127.0.0.1"
+
+warning_list:
+  # Paste / sharing sites (legitimate use but exfiltration risk)
+  - gist.github.com
+  - pastebin.com
+  - hastebin.com
+  - dpaste.org
+
+  # File sharing
+  - transfer.sh
+  - file.io

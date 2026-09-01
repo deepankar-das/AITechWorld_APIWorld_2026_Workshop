@@ -1,0 +1,44 @@
+{
+  "name": "enforcer",
+  "version": "0.1.0",
+  "description": "Runtime security and governance for AI coding agents",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .ts",
+    "daemon": "tsx src/daemon/server.ts",
+    "prepare:dev": "./scripts/prepare.sh",
+    "deploy": "./scripts/deploy.sh",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:dashboard": "./scripts/run_tests.sh"
+  },
+  "dependencies": {
+    "@types/pg": "^8.20.0",
+    "better-sqlite3": "^11.7.0",
+    "http-proxy": "^1.18.1",
+    "js-yaml": "^4.1.0",
+    "pg": "^8.20.0",
+    "uuid": "^11.1.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/http-proxy": "^1.17.15",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.0",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^9.15.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/local/bin/enforcer-hook pre_tool_call",
+            "timeout": 300,
+            "statusMessage": "Enforcer: Evaluating policy..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/local/bin/enforcer-hook post_tool_call"
+          }
+        ]
+      }
+    ]
+  }
+}
