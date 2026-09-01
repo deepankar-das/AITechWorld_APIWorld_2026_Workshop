@@ -1,0 +1,7 @@
+{
+  "name": "01-audit-mutation",
+  "summary": "consolidate audit enrichment to a single row per action (updates the pending event in place)",
+  "touched": [
+    "src/daemon/routes/enrich.ts"
+  ]
+}
