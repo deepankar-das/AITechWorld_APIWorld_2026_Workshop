@@ -175,9 +175,9 @@ h1, h2, h3{ font-family: var(--font-display); font-weight: 600; color: var(--bri
 
 .stat-row{ display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--grid); border: 1px solid var(--grid); }
 .stat{ background: var(--ink); padding: .7rem .85rem; display: grid; gap: .2rem; }
+.stat .n{ font-family: var(--font-mono); font-size: 1.55rem; color: var(--bright); line-height: 1; font-variant-numeric: tabular-nums; }
 .stat--bad .n{ color: var(--fail); }
 .stat--ok .n{ color: var(--pass); }
-.stat .n{ font-family: var(--font-mono); font-size: 1.55rem; color: var(--bright); line-height: 1; font-variant-numeric: tabular-nums; }
 .stat .l{ font-size: .74rem; color: var(--slate); line-height: 1.28; }
 
 ol.steps{ margin: 0; padding: 0; list-style: none; display: grid; gap: .45rem; counter-reset: s; }
