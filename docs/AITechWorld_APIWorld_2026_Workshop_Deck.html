@@ -242,6 +242,28 @@ table.t td:first-child{ color: var(--bright); white-space: nowrap; }
 .clip-cue.live .play::before{ border-left-color: var(--fail); }
 .clip-cue.live{ color: var(--fail); }
 
+/* ---------- scripted terminal ---------- */
+.term{ margin: 0; width: 100%; border: 1px solid var(--grid-2); border-radius: 6px; background: var(--sunken); overflow: hidden; display: grid; }
+.term__bar{ display: flex; align-items: center; gap: .45rem; padding: .5rem .85rem; background: var(--panel); border-bottom: 1px solid var(--grid); }
+.term__dot{ width: .58rem; height: .58rem; border-radius: 50%; background: var(--grid-2); flex: none; }
+.term__title{ font-family: var(--font-mono); font-size: .72rem; color: var(--slate); margin-left: .45rem; letter-spacing: .02em; }
+.term__body{ margin: 0; padding: 1rem 1.2rem; font-family: var(--font-mono); font-size: .8rem; line-height: 1.62; color: var(--chalk); white-space: pre; overflow-x: auto; }
+.term__body .ln{ display: block; opacity: 0; }
+.term__body .ln.on{ opacity: 1; }
+.term.done .term__body .ln{ opacity: 1; }
+.term__body .am{ color: var(--amber); }
+.term__body .ok{ color: var(--pass); }
+.term__body .no{ color: var(--fail); }
+.term__body .dm{ color: var(--slate-dim); }
+.term__cur{ display: none; width: .5ch; height: 1em; background: var(--amber); vertical-align: -.15em; }
+.term.playing .term__cur{ display: inline-block; animation: blink 1s steps(1) infinite; }
+@keyframes blink{ 50%{ opacity: 0; } }
+.term__ctl{ display: flex; gap: .5rem; padding: .55rem .85rem; border-top: 1px solid var(--grid); background: var(--panel); }
+.term__ctl button{ font-family: var(--font-mono); font-size: .7rem; letter-spacing: .09em; text-transform: uppercase; background: transparent; border: 1px solid var(--grid-2); color: var(--amber); border-radius: 4px; padding: .3rem .75rem; cursor: pointer; transition: border-color .15s ease, background .15s ease; }
+.term__ctl button:hover{ border-color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, transparent); }
+.term__ctl button[hidden]{ display: none; }
+@media (prefers-reduced-motion: reduce){ .term__body .ln{ opacity: 1; } .term.playing .term__cur{ animation: none; } }
+
 /* ---------- diagrams ---------- */
 figure.dia{ margin: 0; display: grid; gap: .7rem; justify-items: center; }
 figure.dia svg{ width: 100%; max-width: 340px; height: auto; overflow: visible; }
@@ -528,10 +550,16 @@ low-priority code           loosest</div>
     <p class="kicker">Intelligence in test selection is welcome. <span>Intelligence that lets a critical-invariant regression through is not.</span></p>
   </div></section>
 
-  <!-- 14 · CLIP 1 -->
+  <!-- 14 · CLIP 1 — RADAR selection (scripted terminal) -->
   <section class="slide"><div class="stage">
-    <div class="clip-cue"><span class="play"></span> Clip 1 &mdash; RADAR impact selection</div>
-    <p class="statement sm lo">Diff a file &rarr; the selector computes blast radius &rarr; a risk-weighted slice of the suite, each test carrying the reasons it was chosen and the dimension it covers.</p>
+    <p class="eyebrow">RADAR &middot; live</p>
+    <h2>The risk-weighted corpus for one real change</h2>
+    <figure class="term" data-speed="60">
+      <div class="term__bar"><span class="term__dot"></span><span class="term__dot"></span><span class="term__dot"></span><span class="term__title">node demo/radar/select.mjs --change 01-audit-mutation</span></div>
+      <pre class="term__body"><code><span class="ln"><span class="am">RADAR &middot; Risk-Aware Dependency Analysis for Rapid Verification</span></span><span class="ln"><span class="dm">change:  01-audit-mutation — consolidate audit enrichment to one row/action</span></span><span class="ln"><span class="dm">touched: src/daemon/routes/enrich.ts</span></span><span class="ln"> </span><span class="ln"><span class="dm">  test                          dimension                why</span></span><span class="ln"><span class="dm">  ----------------------------------------------------------------------------</span></span><span class="ln"><span class="am">  [floor]</span> audit-enrich-immutability   system-level invariant   append, never mutate the original</span><span class="ln"><span class="am">  [floor]</span> audit-pipeline              system-level invariant   store is append-only</span><span class="ln"><span class="am">  [floor]</span> policy-engine               system-level invariant   default-deny on unmatched actions</span><span class="ln"><span class="am">  [floor]</span> mcp-gateway                 system-level invariant   denies unregistered servers</span><span class="ln"><span class="am">  [floor]</span> approval-service            system-level invariant   break-glass needs a rationale</span><span class="ln"><span class="am">  [floor]</span> rbac-regression             system-level invariant   role boundaries, daemon + hub</span><span class="ln"> </span><span class="ln">  selected corpus: <span class="am">6 tests</span>  <span class="dm">(6 mandatory floors enforced, 0 by reachability)</span></span><span class="ln"><span class="dm">  selection written to demo/run-folder/&hellip;__01-audit-mutation/selection.json</span><span class="term__cur"></span></span></code></pre>
+      <div class="term__ctl"><button data-act="play">&#9654; play</button><button data-act="replay" hidden>&#8635; replay</button></div>
+    </figure>
+    <p class="cap">Every test carries the reason it was selected and the dimension it covers. The floors are enforced whatever the blast-radius analysis says.</p>
   </div></section>
 
   <!-- 15 · RUN FOLDER -->
@@ -629,10 +657,16 @@ receipt               <span class="am">— hashed against the diff</span></div>
     <p class="cap">residual ratios 0.21 &rarr; 0.022 &rarr; 0.0 · one production convergence campaign · a multi-tenant B2B SaaS platform</p>
   </div></section>
 
-  <!-- 20 · CLIP 2 -->
+  <!-- 20 · CLIP 2 — the loop closing (scripted terminal) -->
   <section class="slide"><div class="stage">
-    <div class="clip-cue"><span class="play"></span> Clip 2 &mdash; the gate run</div>
-    <p class="statement sm lo">Every gate green in ~3 minutes &mdash; then the receipt, <span class="hi">hashed against the diff</span>. A diff that no longer matches its receipt cannot pass.</p>
+    <p class="eyebrow">The Convergence Loop &middot; live</p>
+    <h2>Residual defects to zero, before human review</h2>
+    <figure class="term" data-speed="52">
+      <div class="term__bar"><span class="term__dot"></span><span class="term__dot"></span><span class="term__dot"></span><span class="term__title">node demo/radar/run.mjs   &mdash;   defect &rarr; fix</span></div>
+      <pre class="term__body"><code><span class="ln"><span class="dm">$ node demo/radar/run.mjs</span></span><span class="ln">  <span class="ok">PASS</span>  approval-service         20/20</span><span class="ln">  <span class="ok">PASS</span>  mcp-gateway              12/12</span><span class="ln">  <span class="ok">PASS</span>  policy-engine            16/16</span><span class="ln">  <span class="no">FAIL</span>  audit-enrich-immutability 1/2</span><span class="ln"><span class="no">        &#8627; leaves the original pending event byte-identical</span></span><span class="ln">  <span class="ok">PASS</span>  audit-pipeline           14/14</span><span class="ln">  <span class="ok">PASS</span>  rbac-regression           5/5</span><span class="ln">  VERDICT: <span class="no">FAIL</span>   <span class="dm">68 passed, 1 failed</span></span><span class="ln">  <span class="no">FIRST FAILURE: audit-enrich-immutability</span></span><span class="ln">  <span class="no">admissible_for_merge: false</span></span><span class="ln"> </span><span class="ln" data-pause="500"><span class="dm">$ demo/scripts/apply-change.sh 02-fix</span>   <span class="am"># fix stacks on the diff</span></span><span class="ln"><span class="dm">$ node demo/radar/run.mjs</span></span><span class="ln">  <span class="ok">PASS</span>  audit-enrich-immutability 3/3   <span class="am"># + the counter-example</span></span><span class="ln">  VERDICT: <span class="ok">PASS</span>   <span class="dm">70 passed, 0 failed</span></span><span class="ln">  <span class="ok">admissible_for_merge: true</span><span class="term__cur"></span></span></code></pre>
+      <div class="term__ctl"><button data-act="play">&#9654; play</button><button data-act="replay" hidden>&#8635; replay</button></div>
+    </figure>
+    <p class="cap">The receipt is bound to the change hash. A diff that no longer matches its receipt cannot pass the gate.</p>
   </div></section>
 
   <!-- 21 · ACT IIc -->
@@ -696,16 +730,16 @@ receipt               <span class="am">— hashed against the diff</span></div>
     <p class="kicker">Continuous &mdash; <span>without pretending the same depth is economically sensible for every commit.</span></p>
   </div></section>
 
-  <!-- 25 · LIVE -->
+  <!-- 25 · LIVE — the fast gate catches it (scripted terminal) -->
   <section class="slide"><div class="stage">
-    <div class="clip-cue live"><span class="play"></span> Live &mdash; the whitebox run</div>
-    <div class="well"><span class="k">$</span> run whitebox
-<span class="pass">&check;</span> query parameterization        <span class="pass">&check;</span> secret-leak scan
-<span class="pass">&check;</span> auth coverage / new route     <span class="pass">&check;</span> no unsafe shell path
-<span class="pass">&check;</span> dependency manifest           <span class="pass">&check;</span> container posture
-
-<span class="am">WHITEBOX VERDICT: PASS</span>   <span class="k">~10s</span></div>
-    <p class="lede">This is what runs on every single commit. <strong>If it fails, the commit does not land.</strong></p>
+    <p class="eyebrow">Fast gates &middot; live</p>
+    <h2>The code compiles. No secrets. The floor is what catches it.</h2>
+    <figure class="term" data-speed="70">
+      <div class="term__bar"><span class="term__dot"></span><span class="term__dot"></span><span class="term__dot"></span><span class="term__title">node demo/radar/gate-fast.mjs --change 01-audit-mutation</span></div>
+      <pre class="term__body"><code><span class="ln"><span class="dm">FAST GATES &middot; 01-audit-mutation</span></span><span class="ln"> </span><span class="ln">  G1  tsc --noEmit ............ <span class="ok">PASS</span></span><span class="ln">  G2  secret-leak scan ........ <span class="ok">PASS</span></span><span class="ln" data-pause="350">  G3  touched-module tests (6)  <span class="no">FAIL  1 failing</span></span><span class="ln"><span class="no">        FIRST FAILURE: audit-enrich-immutability.test.ts</span></span><span class="ln"><span class="no">        &ldquo;leaves the original pending event byte-identical&rdquo;</span></span><span class="ln"> </span><span class="ln">  <span class="ok">&#10003;</span>  G1  TypeScript</span><span class="ln">  <span class="ok">&#10003;</span>  G2  Secret scan</span><span class="ln">  <span class="no">&#10007;</span>  G3  Touched-module tests</span><span class="ln"> </span><span class="ln">  FAST GATE VERDICT: <span class="no">FAIL</span>   <span class="dm">6.3s</span><span class="term__cur"></span></span></code></pre>
+      <div class="term__ctl"><button data-act="play">&#9654; play</button><button data-act="replay" hidden>&#8635; replay</button></div>
+    </figure>
+    <p class="cap">tsc and the secret scan are the whitebox-shaped checks &mdash; both green. The invariant floor is the layer that stops the diff.</p>
   </div></section>
 
   <!-- 26 · THE CATCH -->
@@ -813,30 +847,31 @@ Verdict:      <span class="pass">PASS</span>
   <!-- 34 · DEMO SETUP -->
   <section class="slide"><div class="stage">
     <p class="eyebrow">Live demo</p>
-    <h2>One AI-generated pull request. Eight surfaces. One seeded defect.</h2>
-    <div class="well"><span class="k">sample app</span>   multi-tenant usage service
-<span class="k">change</span>       add  <span class="am">GET /v1/accounts/{accountId}/usage-summary</span>
-<span class="k">surfaces</span>     route · OpenAPI contract · usage:read authz ·
-             tenant query · cache key · SDK · flag · telemetry
-<span class="k">defect</span>       <span class="fail">the cache key omits account identity</span>
-             &rarr; under the right request sequence, Tenant B
-               receives a response cached for Tenant A</div>
-    <p class="cap">The code looks plausible. The unit tests are green. The invariant is not.</p>
+    <h2>One AI-generated pull request against Enforcer itself.</h2>
+    <div class="well"><span class="k">target</span>      Enforcer &mdash; the security &amp; policy control plane (this repo)
+<span class="k">change</span>      <span class="am">&ldquo;consolidate audit enrichment to one row per action&rdquo;</span>
+<span class="k">touched</span>     src/daemon/routes/enrich.ts   <span class="k">— 1 file, small diff</span>
+<span class="k">defect</span>      <span class="fail">the pending audit event is updated in place</span>
+            <span class="fail">instead of a new linked enrichment row being appended</span>
+<span class="k">invariant</span>   no silent corruption of persisted state
+            <span class="k">— &ldquo;what was attempted&rdquo; and &ldquo;what happened&rdquo; are separate rows</span></div>
+    <p class="cap">tsc clean · no secrets · every unit test green · one invariant floor red · runs in ~7s, no infrastructure.</p>
   </div></section>
 
   <!-- 35 · DEMO WALK -->
   <section class="slide"><div class="stage">
     <p class="eyebrow">Live demo</p>
-    <h2>PR &rarr; impact map &rarr; gates &rarr; invariant failure &rarr; fix &rarr; re-verify &rarr; receipt</h2>
-    <div class="well"><span class="pass">&check;</span> fast per-commit gates            <span class="k">PASS · 42s</span>
-<span class="am">&rarr;</span> RADAR selects 9 tests
-   <span class="pass">&check;</span> contract · auth-matrix · date-boundaries · client-smoke
-   <span class="fail">&times;</span> <span class="fail">cache.usage_summary.key_partition</span>   <span class="k">FIRST FAILURE</span>
-<span class="pass">&check;</span> whitebox · blackbox              <span class="k">PASS — security green while isolation fails</span>
-<span class="am">&rarr;</span> preserve run artifact             <span class="k">closure_state: open</span>
-<span class="am">&rarr;</span> cache key gains account + role · counter-example test added
-<span class="pass">&check;</span> RADAR 9/9 · independent verifier <span class="pass">PASS</span>
-<span class="am">&rarr;</span> receipt: <span class="am">admissible_for_merge</span>  &ne;  ready_for_rollout</div>
+    <h2>baseline &rarr; PR lands &rarr; gates &rarr; floor fails &rarr; fix &rarr; receipt</h2>
+    <div class="well"><span class="dm">$</span> node demo/radar/gate-fast.mjs                     <span class="pass">G1 G2 G3 PASS</span>  <span class="k">clean baseline</span>
+<span class="dm">$</span> demo/scripts/apply-change.sh 01-audit-mutation    <span class="k">the AI-generated PR lands</span>
+<span class="dm">$</span> node demo/radar/gate-fast.mjs --change 01-…       <span class="pass">G1</span> <span class="pass">G2</span> <span class="fail">G3 FAIL</span>
+<span class="dm">$</span> node demo/radar/select.mjs   --change 01-…        <span class="k">6 floors, reason + dimension each</span>
+<span class="dm">$</span> node demo/radar/run.mjs                           <span class="fail">VERDICT FAIL</span> &middot; FIRST FAILURE
+                                                   <span class="fail">admissible_for_merge: false</span>
+<span class="dm">$</span> demo/scripts/apply-change.sh 02-fix               <span class="k">fix + counter-example, stacked</span>
+<span class="dm">$</span> node demo/radar/run.mjs                           <span class="pass">VERDICT PASS 70/70</span>
+                                                   <span class="am">receipt &rarr; admissible_for_merge: true</span>
+<span class="dm">$</span> demo/scripts/revert.sh                            <span class="k">back to a clean tree</span></div>
   </div></section>
 
   <!-- 36 · ACT IV -->
@@ -915,18 +950,18 @@ Verdict:      <span class="pass">PASS</span>
     "Walk the seven dimensions, pointing at each ring. The output is a risk-weighted list where each test carries its reason and its dimension. That legibility is what makes the selection auditable.",
     "The concept no other framework names. A false negative is a test that passes while the code is broken. Coverage measures what a test touches; FNR measures what it catches. If a test drifts above its target, RADAR flags the test, not the code.",
     "Read the four floors slowly — the slide the security audience is waiting for. RADAR is forbidden from selecting anchor tests away. 'Intelligence that lets a critical-invariant regression through is not welcome.'",
-    "Clip 1 (~2 min). Show: diff a file → the selector computes blast radius → a slice of the full suite, reasons per test on screen. Contrast the slice against the full-suite total. If it stalls, narrate over the last frame.",
+    "RADAR selection, played from the real run. Hit play. `node demo/radar/select.mjs --change 01-audit-mutation` against Enforcer's suite. Point at the [floor] tag on each row and the 'why' column — the selector isn't guessing; every test carries its reason and its dimension. This change touches one file (the audit enrichment route), and it lands entirely on floor-covered surface — so the six mandatory floors alone are the corpus. You can run this genuinely live: it's ~1s, no infrastructure.",
     "The run folder is the audit substrate. Everything a regulator needs — not just which tests ran, but why each was chosen, its FNR target and observed rate, and the receipt hashed against the diff.",
     "Act II·b divider. The Convergence Loop is the primitive the other two orbit. It is what makes left-shift real rather than aspirational.",
     "Walk the eight steps as a procedure, pointing at the ring. Emphasise step 2 (two lanes — product and test code), step 5 (one-shot fixes from no-rerun logs), step 8 (clean = terminate; new issues re-enter at step 2). The dashed arc is the loop-back.",
     "The economic argument. This loop was theoretically correct and impossible in the human-paced world. Agent velocity moved cost-per-iteration from human-days to agent-minutes. A genuine invention of the agentic era, not a rename.",
     "Let the curve draw. 2,094 → 445 → 10 → 0 across three iterations on a multi-tenant B2B SaaS platform. The metric that replaces coverage is the shape of this curve — iterations to zero, and what resolved at each step.",
-    "Clip 2 (~3 min). Show the gate run: every gate green in ~3 minutes, then the receipt bound to the exact diff. 'A diff that no longer matches its receipt cannot pass.'",
+    "The Convergence Loop closing, from the real runs. Hit play. Top half: `node demo/radar/run.mjs` on the seeded defect — 68 of 69 green, one floor red (`audit-enrich-immutability`), VERDICT FAIL, `admissible_for_merge: false`. Bottom half: `demo/scripts/apply-change.sh 02-fix` stacks the fix onto the same diff, re-run — the floor is now 3/3 (the fix ships with a counter-example), 70/70, `admissible_for_merge: true`. The receipt is hashed against the change; a diff that no longer matches its receipt cannot pass the gate. Whole cycle is ~15s live.",
     "Act II·c divider. Take the security-expert stance hardest here. Architecture first, testing second.",
     "What structurally cannot happen. Walk the list — each item is a class of attack removed by design, not by a test. CONFIRM these specifics are safe to state publicly before the talk.",
     "The CI/nightly split. Whitebox categories: SQLi patterns, XSS, secret leakage, auth-coverage gaps, unsafe shell, container posture, dependency risk. Blackbox: headers, method allowlists, oversized payloads, auth enforcement, brute-force, path traversal, CORS, cookies. Say 'about seventy-five checks' at most once; do not read counts off the slide.",
     "Why the split is by cadence, not importance. Whitebox is pattern-matching against source — deterministic, seconds, no infra. Blackbox needs a live server — minutes of spin-up and contention per commit. Nightly gives full coverage at zero developer friction.",
-    "The anchor moment — run it live. `run whitebox` → named OWASP categories in the terminal → PASS in ~10s. 'This is what runs on every single commit. If it fails, the commit does not land.' Have a screen capture ready as fallback.",
+    "The point of this slide: the security-shaped checks are green and the diff still gets stopped. `node demo/radar/gate-fast.mjs --change 01-audit-mutation` — G1 (tsc) PASS, G2 (secret-leak scan) PASS, G3 (touched-module tests) FAIL, FIRST FAILURE on the audit-immutability floor. The change compiles and introduces no secrets — a scanner-only gate waves it through. The invariant floor is the layer that catches a tamper-evidence regression. Run it live (~6s) or play the panel.",
     "The catch that proves it works. One analytics query used quote-escaping instead of parameterization with real user input — not exploitable as configured, but the one copy-paste seed for a future real injection. Fixed, and the finding class is now a permanent regression test.",
     "Act III divider. A dashboard full of green does not mean the test system is honest. Conceptual transition — slow down.",
     "The four requirements are a real sequence — hence numbered. Preserve the artifact, investigate the first failure in stable order, add a counter-example for the class, re-verify cross-agent. Rerunning until green is not closure.",
@@ -935,8 +970,8 @@ Verdict:      <span class="pass">PASS</span>
     "The commit-attested gate. Nothing in most repos binds a passing run to the diff that shipped. The gate admits a commit only if its trailer carries a receipt whose recorded diff-hash matches the staged diff and whose verdict is a pass. Local hook plus independent server-side re-verify. Receipt lives next to the code under a team-owned retention policy.",
     "'Works' is not a test. Walk the table. Each left cell is a story the agent believes; each right cell is the evidence that could disprove it. Preview: the demo shows a cache-key failure and its counter-example.",
     "What we did not automate — honesty about limits. The OWASP WSTG cases left to humans: recon, timing, workflow bypass, manual logic. Never automated: risk acceptance, business authorization, high-blast-radius approval. Close on Ford — automation plus human control points, not instead of them. CONFIRM the Ford stat wording.",
-    "Demo setup. Small multi-tenant usage service; an agent PR adds a usage-summary endpoint touching eight surfaces. Seeded defect: the cache key omits account identity, so Tenant B can receive Tenant A's cached response. The code looks plausible; unit tests are green.",
-    "Demo walk (or fallback if live time is tight). Fast gates pass — not sufficient. RADAR selects 9; the cache-partition invariant fails; that is the first failure. Whitebox and blackbox both pass — security green while isolation fails, which is why the layered system exists. Preserve the artifact, add the counter-example (the class, not the request), fix, re-run the selected corpus, independent verifier passes. Receipt: admissible-for-merge, not ready-for-unrestricted-rollout.\n\nRUNBOOK: gate:fast → radar:select → radar:run → security:whitebox → security:blackbox → checkout fix branch → radar:run → verify:independent → show final receipt.\nKEEP: the impact map, the selected-vs-floor distinction, the seeded failure, the counter-example, the re-verify, the fast-gate-vs-milestone line.\nCUT IN ORDER: the live curl leak demo, the live whitebox command, the live blackbox command, the YAML walk.",
+    "Demo setup. The target is Enforcer itself — the security & policy control plane this whole repo is. The AI-generated PR is a plausible refactor: 'the pending audit event already has the full action context, so appending a separate enrichment row is redundant — just fill observed_effect in on the pending event.' It touches one file, compiles clean, no secrets, and every unit test that doesn't call the enrichment handler stays green. What it breaks: the audit trail's tamper-evidence — an event, once written, is never mutated. Runs in ~7s, no Postgres, no daemon.",
+    "The full runbook — run it live from the repo (~30s end to end) or read it off this slide.\n\n  node demo/radar/gate-fast.mjs                      # clean baseline — G1 G2 G3 PASS\n  demo/scripts/apply-change.sh 01-audit-mutation     # the AI-generated PR lands\n  node demo/radar/gate-fast.mjs --change 01-audit-mutation   # G1 PASS · G2 PASS · G3 FAIL\n  node demo/radar/select.mjs   --change 01-audit-mutation    # 6 floors, reason + dimension each\n  node demo/radar/run.mjs                            # VERDICT FAIL · FIRST FAILURE · admissible_for_merge: false\n  demo/scripts/apply-change.sh 02-fix                # fix + counter-example, stacked on the diff\n  node demo/radar/run.mjs                            # VERDICT PASS 70/70 · receipt admissible_for_merge: true\n  demo/scripts/revert.sh                             # unwind both — clean tree\n\nKEEP: the [floor] distinction on select, the FIRST FAILURE line, admissible false→true, the receipt is bound to the change hash.\nCUT IF TIGHT: the standalone gate-fast baseline; the select step (mention it, don't run it).\nFALLBACK: slides 14 / 20 / 25 carry the captured output — hit play.",
     "Act IV divider. Short.",
     "Three photographable points. 'If you can't name your guardrails, you're not doing AI governance — you're funding next year's cancelled project.' Land each numbered item, then stop.",
     "Resources and Q&A. Start with one repo, one invariant suite, one run artifact, one class of change. QR to agenticfactory.ai and the Substack three-part series (diagnosis · manual · multi-agent coordination). Open with the pilot-surface question.\n\nQ&A PREP —\n'why not run the full suite every change?': too slow, too weakly tied to the precise change; reserve it for milestones.\n'how do you know the selected corpus is sufficient?': reachability + mandatory floors + risk-mandated tests + milestone validation + a learning loop that turns escapes into new rules.\n'does this replace pen testing?': no — it makes it continuous and change-aware; the human engagement stays.\n'works without multiple agents?': yes — core is layered verification, impact selection, run artifacts, closure; cross-model review is the extra independent-challenge path.\n'what should never be automated?': risk acceptance, business authorization, customer-impact trade-offs, ambiguous incident calls, final approval of high-blast-radius or irreversible actions."
@@ -970,8 +1005,45 @@ Verdict:      <span class="pass">PASS</span>
     prev.disabled = idx === 0;
     next.disabled = idx === total - 1;
     if (notes.classList.contains('open')) fillNotes();
+    slides[idx].querySelectorAll('.term').forEach(function(t){ if (t._reset) t._reset(); });
     requestAnimationFrame(function(){ fit(); requestAnimationFrame(fit); });
     try { localStorage.setItem(LS, JSON.stringify({ i: idx, n: notes.classList.contains('open') })); } catch(e){}
+  }
+
+  function initTerminals(){
+    document.querySelectorAll('.term').forEach(function(term){
+      var lines = Array.prototype.slice.call(term.querySelectorAll('.ln'));
+      var play = term.querySelector('[data-act="play"]');
+      var replay = term.querySelector('[data-act="replay"]');
+      var speed = parseInt(term.getAttribute('data-speed') || '55', 10);
+      var timers = [];
+      function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+      function reset(){
+        clearTimers();
+        term.classList.remove('playing', 'done');
+        lines.forEach(function(l){ l.classList.remove('on'); });
+        play.hidden = false; replay.hidden = true;
+      }
+      function run(){
+        clearTimers();
+        lines.forEach(function(l){ l.classList.remove('on'); });
+        play.hidden = true; replay.hidden = true;
+        if (reduce){ term.classList.add('done'); term.classList.remove('playing'); replay.hidden = false; return; }
+        term.classList.add('playing'); term.classList.remove('done');
+        var d = 0;
+        lines.forEach(function(l, i){
+          d += speed + parseInt(l.getAttribute('data-pause') || '0', 10);
+          timers.push(setTimeout(function(){
+            l.classList.add('on');
+            if (i === lines.length - 1){ term.classList.remove('playing'); term.classList.add('done'); replay.hidden = false; }
+          }, d));
+        });
+      }
+      play.addEventListener('click', run);
+      replay.addEventListener('click', run);
+      term._reset = reset;
+      reset();
+    });
   }
 
   function fillNotes(){
@@ -1038,6 +1110,7 @@ Verdict:      <span class="pass">PASS</span>
 
   var rt;
   window.addEventListener('resize', function(){ clearTimeout(rt); rt = setTimeout(fit, 120); });
+  initTerminals();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
   setTimeout(function(){ hint.classList.add('gone'); }, 7000);
 
