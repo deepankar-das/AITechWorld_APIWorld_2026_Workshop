@@ -1,8 +1,8 @@
 > Author: Deepankar Das
 
-# AA Firewall — Development Setup Guide
+# Enforcer — Development Setup Guide
 
-> How to set up a new development machine to prepare, build, deploy, and test AA Firewall.
+> How to set up a new development machine to prepare, build, deploy, and test Enforcer.
 
 ---
 
@@ -29,9 +29,9 @@ For development and evaluation, you can run everything on one machine:
 
 ```bash
 # 1. Get the source code (either clone or untar)
-git clone <repo-url> AAFirewall
-# OR: tar xzf aafirewall-<version>.tar.gz && mv aafirewall-<version> AAFirewall
-cd AAFirewall
+git clone <repo-url> Enforcer
+# OR: tar xzf enforcer-<version>.tar.gz && mv enforcer-<version> Enforcer
+cd Enforcer
 
 # 2. Install prerequisites (includes PostgreSQL — starts it automatically)
 ./scripts/prepare.sh
@@ -81,7 +81,7 @@ sudo ./scripts/deploy_hub.sh \
   --seed-admin-password "adm1"
 ```
 
-This single command handles: PostgreSQL setup (restricted `aafirewall` user), mTLS certificate generation, policy bundle deployment, Hub startup, and seeded Hub login values for demo environments.
+This single command handles: PostgreSQL setup (restricted `enforcer` user), mTLS certificate generation, policy bundle deployment, Hub startup, and seeded Hub login values for demo environments.
 
 ```bash
 sudo ./scripts/deploy_hub.sh --status    # Check Hub status
@@ -148,8 +148,8 @@ To check without installing:
 ```bash
 # Option A: Standalone (prepare.sh handles this)
 brew services start postgresql@16
-createdb aa_firewall
-psql -d aa_firewall -f docker/init.sql
+createdb enforcer
+psql -d enforcer -f docker/init.sql
 
 # Option B: Docker Compose
 docker compose -f docker/docker-compose.yaml up -d
@@ -158,7 +158,7 @@ docker compose -f docker/docker-compose.yaml up -d
 **Verify connection:**
 
 ```bash
-psql -d aa_firewall -c "SELECT COUNT(*) FROM audit_events;"
+psql -d enforcer -c "SELECT COUNT(*) FROM audit_events;"
 ```
 
 ### Step 3: Build
@@ -186,11 +186,11 @@ This produces 5 statically compiled binaries in `go/bin/`:
 
 | Binary | Size | Purpose |
 |---|---|---|
-| `aafirewall-daemon` | ~9 MB | Daemon + HTTP server + embedded console |
-| `aafirewall-hook` | ~8 MB | Claude Code hook handler |
-| `aafirewall-central` | ~9 MB | Central mTLS server |
-| `aafirewall-client` | ~9 MB | Sentinel agent |
-| `aafirewall-authseed` | ~8 MB | Encrypted auth token seeding into PostgreSQL |
+| `enforcer-daemon` | ~9 MB | Daemon + HTTP server + embedded console |
+| `enforcer-hook` | ~8 MB | Claude Code hook handler |
+| `enforcer-central` | ~9 MB | Central mTLS server |
+| `enforcer-client` | ~9 MB | Sentinel agent |
+| `enforcer-authseed` | ~8 MB | Encrypted auth token seeding into PostgreSQL |
 
 **Run Go tests:**
 
@@ -243,14 +243,14 @@ This starts Sentinel-side services only:
 - Sentinel Console on `http://localhost:9100/login/`
 
 Logs:
-- `/tmp/aa-firewall-daemon.log`
-- `/tmp/aa-firewall-console.log`
+- `/tmp/enforcer-daemon.log`
+- `/tmp/enforcer-console.log`
 
 **Or start the Go daemon:**
 
 ```bash
 cd go
-./bin/aafirewall-daemon
+./bin/enforcer-daemon
 ```
 
 The Go daemon serves both the API (port 9100) and the embedded console.
@@ -361,7 +361,7 @@ curl -s http://localhost:9201/api/v1/policy \
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `DATABASE_URL` | `postgresql://$USER@localhost:5432/aa_firewall` | PostgreSQL connection (with `sslmode=require` for production) |
+| `DATABASE_URL` | `postgresql://$USER@localhost:5432/enforcer` | PostgreSQL connection (with `sslmode=require` for production) |
 | `AA_ADMIN_TOKEN` | Auto-generated dev token | Admin authentication for management endpoints |
 
 ### Optional configuration
@@ -373,11 +373,11 @@ curl -s http://localhost:9201/api/v1/policy \
 | `AA_STRICT_MODE` | `true` | Strict mode: deny on all error paths, fail-closed startup |
 | `AA_DAEMON_URL` | `http://127.0.0.1:9100` | Daemon URL for hook handler |
 | `AA_SESSION_ID` | Auto-generated | Session tracking for audit correlation |
-| `CERT_DIR` | `/etc/aafirewall/certs` | TLS certificate directory |
+| `CERT_DIR` | `/etc/enforcer/certs` | TLS certificate directory |
 | `AA_CENTRAL_URL` | `https://localhost:9200` | Management Hub URL (for Sentinel agent) |
 | `AA_CLIENT_ID` | `client_<hostname>_<timestamp>` | Sentinel agent identifier |
 | `AA_SYNC_INTERVAL` | `5s` | Sentinel agent heartbeat/sync interval |
-| `AA_CONFIG_DIR` | `/etc/aafirewall` | Configuration directory |
+| `AA_CONFIG_DIR` | `/etc/enforcer` | Configuration directory |
 | `AA_OSGUARD_MODE` | `off` | OS-level enforcement mode: `enforce` (block), `audit` (log only), `off` (disabled) |
 | `NEXT_PUBLIC_DAEMON_URL` | `http://127.0.0.1:9100` | Daemon URL for the console frontend |
 
@@ -385,7 +385,7 @@ curl -s http://localhost:9201/api/v1/policy \
 
 ## Claude Code Integration
 
-AA Firewall governs Claude Code through **PreToolUse** and **PostToolUse** hooks. Every tool call (Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch) is routed through the hook handler, which calls the Sentinel daemon for policy evaluation before execution.
+Enforcer governs Claude Code through **PreToolUse** and **PostToolUse** hooks. Every tool call (Read, Write, Edit, Bash, Glob, Grep, WebFetch, WebSearch) is routed through the hook handler, which calls the Sentinel daemon for policy evaluation before execution.
 
 There are two hook configuration locations. Both can be active simultaneously — managed settings take priority.
 
@@ -405,9 +405,9 @@ cat > .claude/settings.json << 'HOOKS'
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/local/bin/aafirewall-hook pre_tool_call",
+            "command": "/usr/local/bin/enforcer-hook pre_tool_call",
             "timeout": 300,
-            "statusMessage": "AA Firewall: Evaluating policy..."
+            "statusMessage": "Enforcer: Evaluating policy..."
           }
         ]
       }
@@ -417,7 +417,7 @@ cat > .claude/settings.json << 'HOOKS'
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/local/bin/aafirewall-hook post_tool_call"
+            "command": "/usr/local/bin/enforcer-hook post_tool_call"
           }
         ]
       }
@@ -456,9 +456,9 @@ sudo tee "/Library/Application Support/ClaudeCode/managed-settings.json" > /dev/
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/local/bin/aafirewall-hook pre_tool_call",
+            "command": "/usr/local/bin/enforcer-hook pre_tool_call",
             "timeout": 300,
-            "statusMessage": "AA Firewall: Evaluating policy..."
+            "statusMessage": "Enforcer: Evaluating policy..."
           }
         ]
       }
@@ -468,7 +468,7 @@ sudo tee "/Library/Application Support/ClaudeCode/managed-settings.json" > /dev/
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/local/bin/aafirewall-hook post_tool_call"
+            "command": "/usr/local/bin/enforcer-hook post_tool_call"
           }
         ]
       }
@@ -493,7 +493,7 @@ cat "/Library/Application Support/ClaudeCode/managed-settings.json" 2>/dev/null 
 
 > **Note:** The deploy script (`deploy_sentinel.sh`) installs managed hooks automatically (Step 6). Redeploying restores them.
 
-### Completely Disable AA Firewall Governance
+### Completely Disable Enforcer Governance
 
 To fully disable all governance hooks and let Claude Code run ungoverned:
 
@@ -509,7 +509,7 @@ echo '{}' > .claude/settings.json
 
 Claude Code will now execute all tool calls without policy evaluation.
 
-### Re-enable AA Firewall Governance
+### Re-enable Enforcer Governance
 
 To restore governance after disabling:
 
@@ -530,10 +530,10 @@ git checkout .claude/settings.json
 
 ### Hook Handler Details
 
-- **Binary:** `/usr/local/bin/aafirewall-hook` (Go compiled, ~6 MB, starts in ~5ms)
-- **Log file:** `~/.aafirewall/hook.log` (developer-readable, logs every invocation)
+- **Binary:** `/usr/local/bin/enforcer-hook` (Go compiled, ~6 MB, starts in ~5ms)
+- **Log file:** `~/.enforcer/hook.log` (developer-readable, logs every invocation)
 - **Workspace detection:** Walks up from current directory to find `.git/` or `.claude/` marker as the project root
-- **Auth:** Reads operator token from `/etc/aafirewall/.operator_token` (must be `chmod 644`)
+- **Auth:** Reads operator token from `/etc/enforcer/.operator_token` (must be `chmod 644`)
 - **Internal tools:** Agent, TodoWrite, Skill, etc. are governed by the `org.allow_internal_tools` policy rule (not hardcoded bypasses)
 - **Exit codes:** `0` = allow, `2` = block (deny or approval required)
 
@@ -567,11 +567,11 @@ sudo ./scripts/install-service.sh
 ```
 
 This installs:
-- LaunchDaemon at `/Library/LaunchDaemons/com.aafirewall.daemon.plist`
+- LaunchDaemon at `/Library/LaunchDaemons/com.enforcer.daemon.plist`
 - Auto-restarts on crash (`KeepAlive`)
 - Runs as root (developer cannot kill it)
 - Managed hooks at `/Library/Application Support/ClaudeCode/managed-settings.json`
-- Admin token at `/etc/aafirewall/.admin_token` (permissions 600)
+- Admin token at `/etc/enforcer/.admin_token` (permissions 600)
 
 ```bash
 sudo ./scripts/install-service.sh --status     # Check status
@@ -600,42 +600,42 @@ sudo AA_CENTRAL_URL=https://<hub-server>:9200 ./scripts/deploy_sentinel.sh \
   --seed-dev-password "dev1"
 
 # Optional wrapper mode (when explicit seed values are not required):
-sudo ./scripts/aafirewall_deploy.sh central
+sudo ./scripts/enforcer_deploy.sh central
 
 # Or both components on one machine
-sudo ./scripts/aafirewall_deploy.sh full
+sudo ./scripts/enforcer_deploy.sh full
 
 # Check status
-sudo ./scripts/aafirewall_deploy.sh status
+sudo ./scripts/enforcer_deploy.sh status
 
 # Remove everything
-sudo ./scripts/aafirewall_deploy.sh uninstall
+sudo ./scripts/enforcer_deploy.sh uninstall
 ```
 
 ---
 
 ## Enterprise MDM Deployment (Zero-Touch)
 
-For enterprise environments where IT provisions machines via MDM, the developer never runs any installation commands. The security team pushes the AA Firewall package to developer machines, and governance activates automatically when they open VS Code.
+For enterprise environments where IT provisions machines via MDM, the developer never runs any installation commands. The security team pushes the Enforcer package to developer machines, and governance activates automatically when they open VS Code.
 
 ### What Gets Pushed
 
 | Component | Target Path | Purpose |
 |---|---|---|
-| `aafirewall-daemon` | `/usr/local/bin/` | Daemon binary |
-| `aafirewall-hook` | `/usr/local/bin/` | Hook handler binary |
-| `aafirewall-client` | `/usr/local/bin/` | Sentinel agent binary |
-| `com.aafirewall.daemon.plist` | `/Library/LaunchDaemons/` | Auto-start at boot |
+| `enforcer-daemon` | `/usr/local/bin/` | Daemon binary |
+| `enforcer-hook` | `/usr/local/bin/` | Hook handler binary |
+| `enforcer-client` | `/usr/local/bin/` | Sentinel agent binary |
+| `com.enforcer.daemon.plist` | `/Library/LaunchDaemons/` | Auto-start at boot |
 | `managed-settings.json` | `/Library/Application Support/ClaudeCode/` | Pre-configures Claude Code hooks |
-| `.admin_token` | `/etc/aafirewall/` | Admin token (600 perms) |
-| `client.crt`, `client.key`, `ca.crt` | `/etc/aafirewall/certs/` | mTLS certificates |
-| `default.yaml` | `/etc/aafirewall/` | Initial policy bundle |
-| `.db_credentials` | `/etc/aafirewall/` | PostgreSQL DATABASE_URL (root:600 — developer cannot read) |
+| `.admin_token` | `/etc/enforcer/` | Admin token (600 perms) |
+| `client.crt`, `client.key`, `ca.crt` | `/etc/enforcer/certs/` | mTLS certificates |
+| `default.yaml` | `/etc/enforcer/` | Initial policy bundle |
+| `.db_credentials` | `/etc/enforcer/` | PostgreSQL DATABASE_URL (root:600 — developer cannot read) |
 
 ### How It Works
 
-1. **IT provisions machine via MDM** (Jamf, Intune, Ansible, etc.) — pushes AA Firewall package
-2. **Installer runs `setup-database.sh` under sudo** — creates dedicated `aafirewall` PostgreSQL user with INSERT+SELECT only, revokes developer's OS user access, stores credentials in `/etc/aafirewall/.db_credentials` (root:600)
+1. **IT provisions machine via MDM** (Jamf, Intune, Ansible, etc.) — pushes Enforcer package
+2. **Installer runs `setup-database.sh` under sudo** — creates dedicated `enforcer` PostgreSQL user with INSERT+SELECT only, revokes developer's OS user access, stores credentials in `/etc/enforcer/.db_credentials` (root:600)
 3. **LaunchDaemon starts daemon at boot** — before the developer logs in
 4. **Sentinel agent registers with Management Hub** — receives signed policy bundle via mTLS
 5. **Developer opens VS Code** — Claude Code reads `managed-settings.json`, hooks are active
@@ -650,10 +650,10 @@ The file `/Library/Application Support/ClaudeCode/managed-settings.json` contain
 {
   "hooks": {
     "PreToolUse": [
-      {"type": "command", "command": "/usr/local/bin/aafirewall-hook pre_tool_call"}
+      {"type": "command", "command": "/usr/local/bin/enforcer-hook pre_tool_call"}
     ],
     "PostToolUse": [
-      {"type": "command", "command": "/usr/local/bin/aafirewall-hook post_tool_call"}
+      {"type": "command", "command": "/usr/local/bin/enforcer-hook post_tool_call"}
     ]
   },
   "allowManagedHooksOnly": true
@@ -698,19 +698,19 @@ sudo ./scripts/setup-database.sh
 ```
 
 This script:
-1. Creates a dedicated `aafirewall` PostgreSQL user with a random 32-char password
-2. Creates the `aa_firewall` database owned by `aafirewall`
+1. Creates a dedicated `enforcer` PostgreSQL user with a random 32-char password
+2. Creates the `enforcer` database owned by `enforcer`
 3. Applies the schema with **INSERT + SELECT only** grants (no UPDATE, DELETE, or TRUNCATE)
 4. **Revokes all access from the developer's OS user** — they cannot even connect to the database
-5. Stores `DATABASE_URL` in `/etc/aafirewall/.db_credentials` (root:600 — developer cannot read)
+5. Stores `DATABASE_URL` in `/etc/enforcer/.db_credentials` (root:600 — developer cannot read)
 6. Verifies the developer cannot connect
 
 ### What the Developer Cannot Do
 
 | Attempt | Result |
 |---|---|
-| `psql -d aa_firewall` | Connection refused — developer's OS user has no CONNECT grant |
-| `cat /etc/aafirewall/.db_credentials` | Permission denied — file is root:600 |
+| `psql -d enforcer` | Connection refused — developer's OS user has no CONNECT grant |
+| `cat /etc/enforcer/.db_credentials` | Permission denied — file is root:600 |
 | Read DATABASE_URL from daemon process | Not visible — set in LaunchDaemon plist environment |
 | Stop PostgreSQL | PostgreSQL runs as a system service — developer lacks privilege |
 | Delete the database files | Files owned by postgres user in PostgreSQL data directory |
@@ -788,16 +788,16 @@ make release-integrity         # Build + SBOM (syft) + signature (cosign) + prov
 ```
 
 Output in `go/dist/`:
-- `aafirewall-<version>-<os>-<arch>.tar.gz` — binaries + policies
-- `aafirewall-<version>-sbom.spdx.json` — Software Bill of Materials
-- `aafirewall-<version>.sig.bundle` — Code signature
-- `aafirewall-<version>-provenance.json` — Build provenance
+- `enforcer-<version>-<os>-<arch>.tar.gz` — binaries + policies
+- `enforcer-<version>-sbom.spdx.json` — Software Bill of Materials
+- `enforcer-<version>.sig.bundle` — Code signature
+- `enforcer-<version>-provenance.json` — Build provenance
 
 ---
 
 ## Uninstall
 
-Remove all AA Firewall components (services, binaries, hooks, configs, logs):
+Remove all Enforcer components (services, binaries, hooks, configs, logs):
 
 ```bash
 sudo ./scripts/uninstall.sh
@@ -808,10 +808,10 @@ This removes:
 - Binaries from `/usr/local/bin/`
 - Managed hooks (`/Library/Application Support/ClaudeCode/managed-settings.json`)
 - User-level Claude Code hooks (`~/.claude/settings.json`)
-- Configuration (`/etc/aafirewall/`, `/opt/aafirewall/`)
-- Logs (`/var/log/aafirewall/`, `/var/lib/aafirewall/`)
+- Configuration (`/etc/enforcer/`, `/opt/enforcer/`)
+- Logs (`/var/log/enforcer/`, `/var/lib/enforcer/`)
 
-The PostgreSQL audit database (`aa_firewall`) is **preserved by default** because it contains audit evidence. To also drop the database:
+The PostgreSQL audit database (`enforcer`) is **preserved by default** because it contains audit evidence. To also drop the database:
 
 ```bash
 sudo ./scripts/uninstall.sh --drop-database
@@ -826,7 +826,7 @@ After uninstall, restart VS Code for hook changes to take effect.
 | Problem | Check | Fix |
 |---|---|---|
 | PostgreSQL not running | `pg_isready` | `brew services start postgresql@16` |
-| Database doesn't exist | `psql -l \| grep aa_firewall` | `createdb aa_firewall && psql -d aa_firewall -f docker/init.sql` |
+| Database doesn't exist | `psql -l \| grep enforcer` | `createdb enforcer && psql -d enforcer -f docker/init.sql` |
 | Port 9100 in use | `lsof -i :9100` | `kill <PID>` or change `DAEMON_PORT` |
 | Sentinel Console not loading | Check daemon logs | Verify daemon is running on port 9100 (console is embedded) |
 | TypeScript errors | `npx tsc --noEmit` | Fix reported errors |
@@ -841,7 +841,7 @@ After uninstall, restart VS Code for hook changes to take effect.
 ## File Structure Reference
 
 ```
-AAFirewall/
+Enforcer/
 ├── go/                        # Go port (compiled binaries — production deployment)
 │   ├── cmd/                   # 4 entry points (daemon, hook, central, client)
 │   ├── internal/

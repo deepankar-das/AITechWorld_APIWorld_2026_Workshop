@@ -1,15 +1,15 @@
 > Author: Deepankar Das
 
-# AA Firewall Technical Design Document (Peer Draft, Appendix C Aligned)
+# Enforcer Technical Design Document (Peer Draft, Appendix C Aligned)
 
 ## Document Metadata
 
-- Document: `AA_Firewall_TDD_Peer.md`
-- Product: AA Firewall
+- Document: `Enforcer_TDD_Peer.md`
+- Product: Enforcer
 - Version: 2.0 (rewritten to align with ratified Appendix C)
 - Date: April 27, 2026
-- Source of truth: `docs/AA_Firewall_PRD.md` Appendix C (Section 27)
-- Related final requirements: `docs/AA_Firewall_PRD.md#27` (ratified)
+- Source of truth: `docs/Enforcer_PRD.md` Appendix C (Section 27)
+- Related final requirements: `docs/Enforcer_PRD.md#27` (ratified)
 
 ---
 
@@ -32,7 +32,7 @@ This TDD is a direct implementation design for the ratified requirements in Appe
 
 ## 1. Purpose
 
-Define a build-ready technical architecture for AA Firewall that can:
+Define a build-ready technical architecture for Enforcer that can:
 
 - enforce policy before execution for file, shell, and network surfaces
 - support hierarchical policy with deterministic decisions and explainable outcomes
@@ -85,7 +85,7 @@ Define a build-ready technical architecture for AA Firewall that can:
 
 ## 4. System Design
 
-AA Firewall is implemented as coordinated control-plane and enforcement-plane services.
+Enforcer is implemented as coordinated control-plane and enforcement-plane services.
 
 - Enforcement plane: intercept and gate actions before effect.
 - Decision plane: evaluate policy and return deterministic decisions.
@@ -217,7 +217,7 @@ flowchart TD
   },
   "environment": {
     "workspace": "/workspace/repo",
-    "repo": "aa-firewall",
+    "repo": "enforcer",
     "branch": "feature/x",
     "mode": "container"
   },
@@ -630,6 +630,6 @@ Before promoting scope from one phase to the next, run formal gate review using 
 
 ## 16. Conclusion
 
-This TDD is fully aligned with the ratified Appendix C baseline and is implementation-oriented. It defines the required system design, agentic architecture patterns, communication contracts, enforcement scenarios, and phase-gated delivery model needed to build and demonstrate AA Firewall with a coding agent.
+This TDD is fully aligned with the ratified Appendix C baseline and is implementation-oriented. It defines the required system design, agentic architecture patterns, communication contracts, enforcement scenarios, and phase-gated delivery model needed to build and demonstrate Enforcer with a coding agent.
 
 Phase 1 is intentionally narrow and high-confidence: mandatory enforcement on file/shell/network with Claude Code integrations, real-time approval UX, and reviewer-grade audit evidence. Phase 2 expands protocol governance and additional agent channels without weakening the Phase 1 trust guarantees.

@@ -1,12 +1,12 @@
 > Author: Deepankar Das
 
-# AA Firewall — Product Requirements Document
+# Enforcer — Product Requirements Document
 
 ## Executive Summary: Product and Implementation Overview
 
 ### Product Vision
 
-AA Firewall is a mandatory governance and security control plane purpose-built for AI coding agents operating in developer environments. It sits between AI agents (Claude Code, Cursor, Copilot agents, MCP-driven workflows) and the systems those agents can affect -- intercepting every sensitive action, evaluating it against organizational policy, and enforcing a deterministic outcome (allow, deny, or require approval) before the action executes. The product is designed for security engineering leads and platform engineering leads at mid-market and enterprise software organizations who need to move AI coding agent adoption from constrained pilots to governed production use. AA Firewall is the trust boundary that converts agent productivity from an unmanaged experiment into an approvable operating model.
+Enforcer is a mandatory governance and security control plane purpose-built for AI coding agents operating in developer environments. It sits between AI agents (Claude Code, Cursor, Copilot agents, MCP-driven workflows) and the systems those agents can affect -- intercepting every sensitive action, evaluating it against organizational policy, and enforcing a deterministic outcome (allow, deny, or require approval) before the action executes. The product is designed for security engineering leads and platform engineering leads at mid-market and enterprise software organizations who need to move AI coding agent adoption from constrained pilots to governed production use. Enforcer is the trust boundary that converts agent productivity from an unmanaged experiment into an approvable operating model.
 
 ### Market Context
 
@@ -14,15 +14,15 @@ AI coding agents have shifted from passive code completion to autonomous task ex
 
 ### Architecture Summary
 
-AA Firewall uses a Hub + Sentinel architecture with 5 defense layers:
+Enforcer uses a Hub + Sentinel architecture with 5 defense layers:
 
-- **Layer 1 -- Runtime Hook / SDK Wrapper.** Intent-aware interception before action execution. The hook handler binary (`aafirewall-hook`) reads JSON from stdin, evaluates policy via the local daemon, and returns allow/deny/approval decisions via exit codes (0 = allow, 2 = deny). The hook handler performs project root walk-up detection and logs to `~/.aafirewall/hook.log`. Tool mappings cover 8 system-affecting tools (Read, Edit, Write, Bash, WebFetch, WebSearch, Glob, Grep) and 17 internal orchestration tools.
+- **Layer 1 -- Runtime Hook / SDK Wrapper.** Intent-aware interception before action execution. The hook handler binary (`enforcer-hook`) reads JSON from stdin, evaluates policy via the local daemon, and returns allow/deny/approval decisions via exit codes (0 = allow, 2 = deny). The hook handler performs project root walk-up detection and logs to `~/.enforcer/hook.log`. Tool mappings cover 8 system-affecting tools (Read, Edit, Write, Bash, WebFetch, WebSearch, Glob, Grep) and 17 internal orchestration tools.
 - **Layer 2 -- Managed Hooks.** Hooks are installed by the Sentinel agent running as root (via sudo or MDM) into Claude Code's settings, ensuring developers cannot remove or bypass enforcement.
-- **Layer 3 -- Privileged Daemon.** The local daemon (`aafirewall-daemon`) runs on localhost:9100, performs policy lookup, decision caching, audit buffering, RBAC (operator role), and serves the Sentinel Console. It persists all audit events to PostgreSQL (append-only, no UPDATE or DELETE) with decision normalization and unlimited query limit. The daemon provides `governed_user` from health endpoint for Sentinel data filtering.
+- **Layer 3 -- Privileged Daemon.** The local daemon (`enforcer-daemon`) runs on localhost:9100, performs policy lookup, decision caching, audit buffering, RBAC (operator role), and serves the Sentinel Console. It persists all audit events to PostgreSQL (append-only, no UPDATE or DELETE) with decision normalization and unlimited query limit. The daemon provides `governed_user` from health endpoint for Sentinel data filtering.
 - **Layer 4 -- OS Kernel Enforcer (planned).** eBPF (Linux) / ESF (macOS) intercepts at the syscall level for file.open, execve, and connect -- catching raw terminal bypass outside the agent runtime.
-- **Layer 5 -- Management Hub.** The central server (`aafirewall-central`) uses mTLS on ports 9200 (client) and 9201 (admin) for policy distribution, audit aggregation, signed bundles, Sentinel heartbeat monitoring, and the Hub Console for security admins. All Hub state (policies, clients, enforcement toggles) is persisted in PostgreSQL. The Hub Console supports RBAC with admin and reviewer roles.
+- **Layer 5 -- Management Hub.** The central server (`enforcer-central`) uses mTLS on ports 9200 (client) and 9201 (admin) for policy distribution, audit aggregation, signed bundles, Sentinel heartbeat monitoring, and the Hub Console for security admins. All Hub state (policies, clients, enforcement toggles) is persisted in PostgreSQL. The Hub Console supports RBAC with admin and reviewer roles.
 
-The Sentinel agent (`aafirewall-client`) handles registration with the Hub, policy sync with hash-based change detection, heartbeat reporting, and audit event forwarding -- all over mTLS.
+The Sentinel agent (`enforcer-client`) handles registration with the Hub, policy sync with hash-based change detection, heartbeat reporting, and audit event forwarding -- all over mTLS.
 
 ### Key Capabilities
 
@@ -51,27 +51,27 @@ The Go port is complete and produces 5 statically compiled binaries with zero ru
 
 | Binary | Role |
 |--------|------|
-| `aafirewall-daemon` | Local enforcement daemon with Sentinel Console (localhost:9100) |
-| `aafirewall-hook` | Hook handler for Claude Code PreToolUse/PostToolUse with project root walk-up |
-| `aafirewall-central` | Management Hub with mTLS (ports 9200/9201) and Hub Console |
-| `aafirewall-client` | Sentinel agent (registration, policy sync, heartbeat, audit forwarding) |
-| `aafirewall-authseed` | Authentication seed utility for initial credential provisioning |
+| `enforcer-daemon` | Local enforcement daemon with Sentinel Console (localhost:9100) |
+| `enforcer-hook` | Hook handler for Claude Code PreToolUse/PostToolUse with project root walk-up |
+| `enforcer-central` | Management Hub with mTLS (ports 9200/9201) and Hub Console |
+| `enforcer-client` | Sentinel agent (registration, policy sync, heartbeat, audit forwarding) |
+| `enforcer-authseed` | Authentication seed utility for initial credential provisioning |
 
-The console uses dual builds: `out-hub` (embedded in `aafirewall-central` for port 9201) and `out-sentinel` (embedded in `aafirewall-daemon` for port 9100), each with separate navigation items tailored to their respective audiences.
+The console uses dual builds: `out-hub` (embedded in `enforcer-central` for port 9201) and `out-sentinel` (embedded in `enforcer-daemon` for port 9100), each with separate navigation items tailored to their respective audiences.
 
 ### Deployment Model
 
-The Hub (`aafirewall-central`) runs on the security team's server with PostgreSQL for state persistence and audit aggregation. It exposes two mTLS ports: 9200 for Sentinel client communication and 9201 for admin access and the Hub Console (with admin/reviewer RBAC). The Sentinel (`aafirewall-client`) runs on each developer machine, managed via sudo or MDM, and handles local enforcement through the daemon and hook handler. The Sentinel registers with the Hub, syncs policies (with hash-based change detection to minimize bandwidth), forwards audit events, and sends heartbeats. The Hub tracks Sentinel status (online, stale, offline) and can push policy updates and enforcement state changes to all connected Sentinels. Certificates for mTLS are generated via the `generate-certs.sh` script. Deployment scripts support single-machine (Hub + Sentinel collocated), separate Hub deployment, and separate Sentinel deployment.
+The Hub (`enforcer-central`) runs on the security team's server with PostgreSQL for state persistence and audit aggregation. It exposes two mTLS ports: 9200 for Sentinel client communication and 9201 for admin access and the Hub Console (with admin/reviewer RBAC). The Sentinel (`enforcer-client`) runs on each developer machine, managed via sudo or MDM, and handles local enforcement through the daemon and hook handler. The Sentinel registers with the Hub, syncs policies (with hash-based change detection to minimize bandwidth), forwards audit events, and sends heartbeats. The Hub tracks Sentinel status (online, stale, offline) and can push policy updates and enforcement state changes to all connected Sentinels. Certificates for mTLS are generated via the `generate-certs.sh` script. Deployment scripts support single-machine (Hub + Sentinel collocated), separate Hub deployment, and separate Sentinel deployment.
 
 ### Differentiation
 
-AA Firewall differs from existing security tools in several concrete ways. Unlike AI gateways and LLM firewalls that inspect prompts at the model layer, AA Firewall governs the actual machine actions agents execute -- file writes, shell commands, network calls, package installs. Unlike endpoint security tools that monitor process behavior, AA Firewall understands agent intent and maps tool invocations to policy decisions before execution, not after. Unlike secrets managers that govern credential lifecycle, AA Firewall governs the full action chain from prompt to tool call to system effect. The system enforces mandatory mediation (not passive logging), preserves policy rationale for every decision, supports non-blocking approval workflows that maintain developer flow, and produces forensic-grade audit trails linking actor, intent, policy, and outcome. The combination of runtime interception, protocol-aware governance (MCP tool mappings), hierarchical policy with signed bundles, approval orchestration with scoped permissions, and replayable audit context in a single coordinated control plane is the product's structural advantage.
+Enforcer differs from existing security tools in several concrete ways. Unlike AI gateways and LLM firewalls that inspect prompts at the model layer, Enforcer governs the actual machine actions agents execute -- file writes, shell commands, network calls, package installs. Unlike endpoint security tools that monitor process behavior, Enforcer understands agent intent and maps tool invocations to policy decisions before execution, not after. Unlike secrets managers that govern credential lifecycle, Enforcer governs the full action chain from prompt to tool call to system effect. The system enforces mandatory mediation (not passive logging), preserves policy rationale for every decision, supports non-blocking approval workflows that maintain developer flow, and produces forensic-grade audit trails linking actor, intent, policy, and outcome. The combination of runtime interception, protocol-aware governance (MCP tool mappings), hierarchical policy with signed bundles, approval orchestration with scoped permissions, and replayable audit context in a single coordinated control plane is the product's structural advantage.
 
 ---
 
 ## 0. MVP Prototype Requirements Traceability
 
-This section maps every requirement from the [AA Firewall venture prompt](AA_Firewall_Prompt.md) to the MVP prototype, showing how each item is addressed and where it integrates into the product architecture.
+This section maps every requirement from the [Enforcer venture prompt](Enforcer_Prompt.md) to the MVP prototype, showing how each item is addressed and where it integrates into the product architecture.
 
 ### 0.1 Deliverable 1 — Working Prototype
 
@@ -79,9 +79,9 @@ The venture prompt states: *"Build a functional prototype that intercepts, inspe
 
 | Req No. | Requirement | Understanding | Details | Integration |
 |---|---|---|---|---|
-| **MVP-1** | **Intercept agent actions across at least two of: file system reads/writes, shell command execution, network calls, package installs, credential or secret access** | The requirement asks AA Firewall to prove it can sit in the critical path of agent execution — not just observe after the fact, but intercept before the action reaches the operating system or network. "At least two" sets a floor; the real test is whether interception is pre-execution (can block) rather than post-execution (can only log). The five listed surfaces represent the highest-risk action classes for enterprise security teams: file mutation can corrupt codebases, shell execution can destroy infrastructure, network egress can exfiltrate IP, package installs can introduce supply-chain attacks, and credential access can escalate privilege. Covering more surfaces with real enforcement is strictly better, but each surface requires a different interception mechanism, so the requirement wisely limits the minimum to avoid shallow coverage across all five. | The MVP intercepts three surfaces (exceeding the minimum of two): (1) **file system reads/writes** via a filesystem guard that enforces project-path boundaries and logs all file operations with path, content hash, and policy decision; (2) **shell command execution** via a shell proxy that captures commands before execution, evaluates them against command-pattern policies, and blocks or gates destructive/exfiltrative commands; (3) **network egress** via a network proxy that enforces host allowlists, logs destination metadata, and blocks calls to non-sanctioned hosts. Package installs and credential access are governed as P1 extensions. | Filesystem guard, shell proxy, and network proxy all report to the local daemon, which evaluates policy and emits normalized audit events. Primary target agent is Claude Code (VS Code + CLI) with full pre-execution interception; secondary is Cursor via MCP gateway. See Section 8.4 (MVP Integration Targets), Section 11 (Architecture), FR-1 (Action Interception), and Section 14 (Threat Surface Matrix). |
+| **MVP-1** | **Intercept agent actions across at least two of: file system reads/writes, shell command execution, network calls, package installs, credential or secret access** | The requirement asks Enforcer to prove it can sit in the critical path of agent execution — not just observe after the fact, but intercept before the action reaches the operating system or network. "At least two" sets a floor; the real test is whether interception is pre-execution (can block) rather than post-execution (can only log). The five listed surfaces represent the highest-risk action classes for enterprise security teams: file mutation can corrupt codebases, shell execution can destroy infrastructure, network egress can exfiltrate IP, package installs can introduce supply-chain attacks, and credential access can escalate privilege. Covering more surfaces with real enforcement is strictly better, but each surface requires a different interception mechanism, so the requirement wisely limits the minimum to avoid shallow coverage across all five. | The MVP intercepts three surfaces (exceeding the minimum of two): (1) **file system reads/writes** via a filesystem guard that enforces project-path boundaries and logs all file operations with path, content hash, and policy decision; (2) **shell command execution** via a shell proxy that captures commands before execution, evaluates them against command-pattern policies, and blocks or gates destructive/exfiltrative commands; (3) **network egress** via a network proxy that enforces host allowlists, logs destination metadata, and blocks calls to non-sanctioned hosts. Package installs and credential access are governed as P1 extensions. | Filesystem guard, shell proxy, and network proxy all report to the local daemon, which evaluates policy and emits normalized audit events. Primary target agent is Claude Code (VS Code + CLI) with full pre-execution interception; secondary is Cursor via MCP gateway. See Section 8.4 (MVP Integration Targets), Section 11 (Architecture), FR-1 (Action Interception), and Section 14 (Threat Surface Matrix). |
 | **MVP-2** | **Enforce a configurable policy (allow / deny / require approval) with at least one non-trivial rule** | The three decision types — allow, deny, require approval — represent a minimal but complete governance vocabulary. "Allow" permits safe work to proceed without friction. "Deny" hard-blocks actions that violate policy unconditionally. "Require approval" is the most interesting: it introduces human judgment into the loop, enabling controlled risk acceptance rather than binary allow/deny. "Configurable" means policies must not be hardcoded — enterprises need to tune rules to their own risk tolerance, environment, and workflows. "Non-trivial" means the rule must depend on context (path, host, command pattern, etc.), not just action type. A rule like "deny all shell commands" is trivial and useless; "deny shell commands matching exfiltration patterns unless the user holds an elevated approval" is non-trivial and demonstrates real governance value. The deeper implication: the policy engine must be expressive enough to encode real enterprise security policies, not just demo rules. | The MVP ships a hierarchical policy engine supporting three decision types — allow, deny, and require approval — evaluated against context including actor, agent type, session, file path, command pattern, destination host, and environment. Non-trivial rules shipped by default: (a) deny writes outside the project root directory; (b) deny outbound network calls to hosts not on the organization allowlist; (c) require human approval before executing shell commands matching high-risk patterns (rm -rf, git push --force, curl to unknown hosts). Policies are configurable per organization, team, and developer-local scope with hierarchical inheritance where lower levels can tighten but never weaken upper-level baselines. | Central policy engine with hierarchical inheritance (org → team → repo → local). See Section 12 (Policy and Governance Model), FR-3 (Policy Engine), and Section 15.1 (MVP Feature Priorities — P0). |
-| **MVP-3** | **Produce a structured audit log of agent actions that a security reviewer could meaningfully read** | This requirement has two parts that are easy to conflate but are distinct. "Structured" means machine-parseable, schema-consistent, filterable, and queryable — not free-text log lines or unstructured JSON blobs. "Meaningfully read" means the log must tell a story a security reviewer can follow: who did what, to which resource, under which policy, with what outcome, and with what approval chain. Most existing tools fail the "meaningfully read" test because they emit raw OS events (process IDs, syscall numbers, file descriptors) that require deep system knowledge to interpret. AA Firewall's audit must bridge the semantic gap between agent intent ("I want to install lodash") and system effect ("npm install lodash was executed, package.json was modified, network call to registry.npmjs.org was made"). The audit trail is also the product's compliance asset — it is the evidence that enterprises present during security reviews, incident investigations, and regulatory audits to prove governance was active. If the audit is noisy, incomplete, or hard to navigate, the product fails its core enterprise value proposition. | Every intercepted action generates a structured audit event containing: timestamp, agent identity, user identity, session ID, workspace/repo context, action type, resource target, payload summary (redacted as appropriate), policy evaluated, decision returned, approver identity and rationale (when applicable), and observed execution result. Events are append-only (no UPDATE or DELETE). The security review console provides session-level replay, search/filter across all dimensions, and exportable evidence packages. Audit events are linked by session and delegation chain — not flat isolated logs, but a causal narrative of the agent's behavior. | Audit event pipeline → append-only audit store → security review console. See FR-5 (Audit Trail and Session Replay), FR-10 (Security Console), and Section 22 (Success Metrics — audit completeness rate). |
+| **MVP-3** | **Produce a structured audit log of agent actions that a security reviewer could meaningfully read** | This requirement has two parts that are easy to conflate but are distinct. "Structured" means machine-parseable, schema-consistent, filterable, and queryable — not free-text log lines or unstructured JSON blobs. "Meaningfully read" means the log must tell a story a security reviewer can follow: who did what, to which resource, under which policy, with what outcome, and with what approval chain. Most existing tools fail the "meaningfully read" test because they emit raw OS events (process IDs, syscall numbers, file descriptors) that require deep system knowledge to interpret. Enforcer's audit must bridge the semantic gap between agent intent ("I want to install lodash") and system effect ("npm install lodash was executed, package.json was modified, network call to registry.npmjs.org was made"). The audit trail is also the product's compliance asset — it is the evidence that enterprises present during security reviews, incident investigations, and regulatory audits to prove governance was active. If the audit is noisy, incomplete, or hard to navigate, the product fails its core enterprise value proposition. | Every intercepted action generates a structured audit event containing: timestamp, agent identity, user identity, session ID, workspace/repo context, action type, resource target, payload summary (redacted as appropriate), policy evaluated, decision returned, approver identity and rationale (when applicable), and observed execution result. Events are append-only (no UPDATE or DELETE). The security review console provides session-level replay, search/filter across all dimensions, and exportable evidence packages. Audit events are linked by session and delegation chain — not flat isolated logs, but a causal narrative of the agent's behavior. | Audit event pipeline → append-only audit store → security review console. See FR-5 (Audit Trail and Session Replay), FR-10 (Security Console), and Section 22 (Success Metrics — audit completeness rate). |
 | **MVP-4** | **Implement one depth area: real-time human-in-the-loop approval UX, anomaly detection over agent action sequences, secrets/PII redaction in agent context, multi-agent policy isolation, or org-level policy distribution** | The five listed depth areas each represent a different dimension of enterprise agent governance. The requirement explicitly asks for one — going deep rather than spreading thin. **Approval UX** is about converting hard blocks into supervised permission, which is the buyer's core ask: "let agents work, but let me control the risky parts." **Anomaly detection** is about identifying suspicious behavior patterns (e.g., "read .env then curl to unknown host") — powerful but requires ML infrastructure and stable event models. **Secrets/PII redaction** prevents sensitive data from leaking into model context or logs — critical for compliance but narrower in scope. **Multi-agent isolation** prevents cross-session data leakage — important as agent architectures grow more complex. **Org-level policy distribution** enables central governance at scale — essential for enterprise but less dramatic in a prototype. The choice of depth area should maximize both demo impact and pipeline validation. Approval UX is the strongest choice because: it is visible to both developers and security reviewers; it exercises the full interception → policy → human decision → audit pipeline; it directly demonstrates the product's core value proposition of converting "blocked" to "approved with oversight"; and it does not require ML infrastructure or complex distributed systems. | The MVP implements **non-blocking human-in-the-loop approval UX** as the primary depth area. When a policy evaluates to "require approval," the hook handler exits immediately with a deny exit code, creates an approval request, and the developer retries after approval is granted. Approvals are managed via the Hub Console (admin/reviewer RBAC on port 9201) and the Sentinel Console (operator role on port 9100). Approvals support three scope types (single-use, time-bounded, session-scoped), pattern matching against action types and resource values, and break-glass emergency access with explicit exception tracking. Every approval decision — including approver identity, rationale, scope, and expiry — is recorded in the audit trail. Approval metrics track created, approved, denied, and expired counts. | Approval service integrated with policy engine and audit pipeline. Hub Console and Sentinel Console surface approvals. See FR-4 (Approval Workflows), FR-10 (Security Console), FR-11 (Developer Transparency), and Section 15.2 (Recommended Depth Area rationale). |
 | **MVP-5** | **Depth over breadth: going deep on one area is stronger than touching all of them** | This is a meta-requirement about product strategy, not a feature. It says: do not build a shallow prototype that can technically claim all five surfaces and all five depth areas but does none of them convincingly. The evaluation will favor a product that can demonstrate real, working, mandatory enforcement on a narrow scope over a product that logs events across many surfaces without actually blocking anything. The implication for engineering is: every surface we claim to cover must have real enforcement (pre-execution blocking, not post-execution logging), real policy evaluation (context-aware decisions, not hardcoded rules), and real audit evidence (structured, queryable, reviewer-friendly events). It is better to ship three surfaces with real enforcement and one excellent depth area than to ship five surfaces with shallow logging and no depth. The secondary implication: defer capabilities that cannot be made excellent in the MVP timeframe. Anomaly detection, multi-agent isolation, and advanced secrets redaction are all valuable but each requires significant infrastructure investment. Ship them when the foundation is proven, not before. | The MVP prioritizes depth in two areas: (1) **approval UX** as the primary depth area — fully realized with in-IDE delivery, time-bounded scopes, reusable windows, break-glass access, and full audit integration; (2) **MCP-aware governance** as a secondary differentiator — protocol-level tool governance that no legacy security product can replicate. All other capabilities (anomaly detection, multi-agent isolation, advanced secrets redaction) are explicitly scoped to P2 and deferred until the core engine is proven. The three interception surfaces (file, shell, network) are each implemented with real enforcement — not shallow logging — including mandatory policy evaluation, blocking capability, and structured audit events for every action. | See Section 15 (MVP Definition), Section 16 (Phased Roadmap — Phase 1), and Section 24 (Sequencing Rationale). |
 
@@ -91,9 +91,9 @@ The venture prompt states: *"Cover user, pain point, market wedge, MVP scope, an
 
 | Req No. | Requirement | Understanding | Details | Integration |
 |---|---|---|---|---|
-| **PRD-1** | **User** | The requirement asks us to define who will actually use the product day-to-day — not just who buys it. Enterprise security products fail when they only consider the buyer persona and ignore the daily operator and the end user who must tolerate the controls. AA Firewall touches at least three distinct interaction surfaces: the security team that reviews and investigates, the platform team that configures and deploys, and the developer whose agent workflow is being governed. Each persona has different tolerance for friction, different information needs, and different definitions of "value." A product that nails the buyer persona but alienates developers will be bypassed; a product that delights developers but fails security review will never be purchased. | Five user personas defined: Security Engineer (reviewer), Platform Engineer (administrator), Developer (end user), Engineering Manager (approver), Executive Buyer (CISO/VP). Each includes role description, daily interaction pattern, and core needs. Jobs-to-be-done statements articulate what each persona is trying to accomplish in their own language. | Section 5.3 (User Personas), Section 5.4 (Jobs to Be Done). |
+| **PRD-1** | **User** | The requirement asks us to define who will actually use the product day-to-day — not just who buys it. Enterprise security products fail when they only consider the buyer persona and ignore the daily operator and the end user who must tolerate the controls. Enforcer touches at least three distinct interaction surfaces: the security team that reviews and investigates, the platform team that configures and deploys, and the developer whose agent workflow is being governed. Each persona has different tolerance for friction, different information needs, and different definitions of "value." A product that nails the buyer persona but alienates developers will be bypassed; a product that delights developers but fails security review will never be purchased. | Five user personas defined: Security Engineer (reviewer), Platform Engineer (administrator), Developer (end user), Engineering Manager (approver), Executive Buyer (CISO/VP). Each includes role description, daily interaction pattern, and core needs. Jobs-to-be-done statements articulate what each persona is trying to accomplish in their own language. | Section 5.3 (User Personas), Section 5.4 (Jobs to Be Done). |
 | **PRD-2** | **Pain point** | The pain is not "AI is risky" in the abstract — the specific, concrete pain is that security and platform teams cannot answer basic governance questions about what agents do, and this inability blocks adoption that the organization wants. The pain is felt as deployment friction: pilots stall, rollout proposals fail security review, and engineering leaders cannot get budget approval for tools their teams want to use. The pain is acute because it sits at the intersection of strong demand (productivity gains from agents) and strong fear (uncontrolled access to sensitive systems). Every week the governance gap persists, the organization either accepts unmitigated risk or forgoes measurable productivity gains. | The core pain point is the governance gap: AI coding agents take actions on real systems at machine speed, while security teams cannot answer what the agent did, what it tried to access, whether policy was enforced, and what evidence exists for review. This blocks enterprise-wide adoption. Nine specific threat surfaces are detailed with concrete risk examples spanning file mutation, shell execution, network exfiltration, supply-chain attacks, credential theft, MCP abuse, database extraction, context leakage, and unbounded delegation. | Section 3 (Problem Statement), Section 3.3 (Full Threat Surface), Section 3.4 (The Adoption Blocker). |
-| **PRD-3** | **Market wedge** | The wedge is not "AI security" broadly — that category is crowded and vague. The wedge is the specific, narrow, high-urgency blocker: the security review that prevents enterprise-wide agent rollout. This is a blocking problem, not an optimization problem. Buyers can justify spend if AA Firewall converts "not yet approved" into "approved with controls." The wedge must be defensible against three adjacencies: LLM guardrails vendors (who govern prompts, not machine actions), endpoint security vendors (who were built for humans, not agents), and IDE vendors (who have vendor-specific controls, not neutral enforcement). The sharpest positioning is "runtime governance for AI coding agents" — specific enough to own, broad enough to expand from. | The wedge is the security review that blocks broad agent adoption in mid-market and enterprise engineering organizations. AA Firewall removes the blocker by providing mandatory control, not just observability. Positioned as "runtime governance for AI coding agents" — distinct from LLM guardrails, endpoint security, and broad AI security platforms. GTM positioning table maps against five adjacent categories with specific differentiation messages. | Section 17 (Market Appetite), Section 17.2 (Positioning Statement), Section 17.4 (GTM Positioning Against Adjacent Categories). |
+| **PRD-3** | **Market wedge** | The wedge is not "AI security" broadly — that category is crowded and vague. The wedge is the specific, narrow, high-urgency blocker: the security review that prevents enterprise-wide agent rollout. This is a blocking problem, not an optimization problem. Buyers can justify spend if Enforcer converts "not yet approved" into "approved with controls." The wedge must be defensible against three adjacencies: LLM guardrails vendors (who govern prompts, not machine actions), endpoint security vendors (who were built for humans, not agents), and IDE vendors (who have vendor-specific controls, not neutral enforcement). The sharpest positioning is "runtime governance for AI coding agents" — specific enough to own, broad enough to expand from. | The wedge is the security review that blocks broad agent adoption in mid-market and enterprise engineering organizations. Enforcer removes the blocker by providing mandatory control, not just observability. Positioned as "runtime governance for AI coding agents" — distinct from LLM guardrails, endpoint security, and broad AI security platforms. GTM positioning table maps against five adjacent categories with specific differentiation messages. | Section 17 (Market Appetite), Section 17.2 (Positioning Statement), Section 17.4 (GTM Positioning Against Adjacent Categories). |
 | **PRD-4** | **MVP scope** | MVP scope must be ruthlessly bounded. The prompt explicitly rewards depth over breadth, so the MVP should not attempt to cover every agent, every surface, and every enterprise need. The scope should be narrow enough to be excellent and broad enough to be credible. "Credible" means a security reviewer can watch the demo and believe the product could pass their organization's security review. "Excellent" means the surfaces we cover have real enforcement (not logging), real policy (not hardcoded rules), and real audit (not raw events). The out-of-scope list is as important as the in-scope list — it shows discipline and signals that the team understands what matters first. | MVP covers three interception surfaces (file, shell, network), policy engine with allow/deny/approval and hierarchical inheritance, structured audit logs with session-level replay, security review console with search/filter/export, approval UX as primary depth area with in-IDE delivery, VS Code integration, opinionated default policies, secure-container deployment mode, and support for Claude Code, Cursor, and Codex. Explicit out-of-scope: CNAPP, broad endpoint monitoring, universal agent support, LLM content moderation, ML-based anomaly detection. | Section 8 (Product Scope), Section 15 (MVP Definition). |
 | **PRD-5** | **Sequencing rationale** | The sequencing must answer why this order and not another. The logic is: (1) mandatory enforcement on the highest-risk surfaces must come first because it establishes credibility — without it, the product is just another dashboard; (2) protocol-aware expansion (MCP, secrets) comes second because it creates differentiation that legacy tools cannot replicate; (3) intelligence layers (anomaly detection, graph replay) come last because they require a stable event model and replay substrate to build on, and shipping them prematurely creates noisy, unreliable systems. Each phase must be independently valuable — Phase 1 alone must be enough to pass a security review and win a pilot customer. | Depth over breadth: win one high-trust workflow deeply before broadening. Phase 1 proves mandatory enforcement on file/shell/network with excellent approval UX and credible audit. Phase 2 adds protocol-aware expansion (MCP, secrets, packages, SIEM integration). Phase 3 builds enterprise control plane (multi-agent governance, anomaly detection, graph replay, policy simulation). Intelligence layers wait until the event model and replay substrate are stable. Each phase is independently deployable and valuable. | Section 16 (Phased Roadmap), Section 24 (Sequencing Rationale). |
 | **PRD-6** | **Primary buyer and why** | The prompt asks us to name the specific role that signs the purchase order, not just "enterprise security." The buyer must be the person whose problem the product directly solves and who has budget authority. The security engineering lead is the right choice because: (a) they own the security review process that is the literal blocker — when they say "not approved," agent rollout stops; (b) they have direct budget for developer-security infrastructure; (c) they are the person who will be called at 2 AM if an agent exfiltrates source code; (d) they are motivated by both risk reduction and by enabling the engineering organization to use tools safely. The platform engineering lead is the technical champion who validates the product works in their stack. The CISO is the economic sponsor for larger deals. Getting the buyer wrong means selling to someone who cannot actually unblock the purchase. | Primary buyer is the **security engineering lead** at a mid-market or enterprise software organization (300+ engineers). Why: this role is directly accountable for approving or blocking coding-agent rollout, owns the security review process that is the adoption bottleneck, and has budget authority for developer-security infrastructure. Secondary buyers: platform engineering lead (technical champion who validates deployment), CISO/VP Security (economic sponsor for enterprise deals). | Section 5.1 (ICP), Section 5.2 (Buyer Map). |
@@ -104,7 +104,7 @@ The venture prompt states: *"Cover architecture decisions, where the interceptio
 
 | Req No. | Requirement | Understanding | Details | Integration |
 |---|---|---|---|---|
-| **TDD-1** | **Architecture decisions** | The requirement asks for explicit, justified choices about how the system is built — not just what it does. The key architectural question for AA Firewall is: can a single control point govern all agent action surfaces? The answer is no. A runtime hook sees intent but cannot enforce if the agent bypasses the SDK. A container constrains execution but cannot govern MCP traffic outside its boundary. A proxy controls network but cannot see local file operations. This means the architecture must be hybrid by necessity, not by preference. The decision has direct implications for complexity, deployment friction, and enforcement guarantees. The TDD must show the evaluator that this trade-off is understood and that the hybrid approach is the minimum viable architecture for credible mandatory enforcement. | Hybrid enforcement architecture: no single control point is sufficient. The product combines agent runtime hooks (intent capture), local daemon (policy evaluation and coordination), shell proxy (command mediation), filesystem guard (path enforcement), network proxy (egress control), and MCP gateway (protocol-aware tool governance). Three deployment topologies supported: host-based pilot (lowest friction), secure-container (high assurance for local dev), and remote-workspace (strongest tamper resistance for enterprise). Five logical layers: experience, agent runtime, enforcement, control plane, and observability/intelligence. | Section 11 (Architecture Overview), specifically 11.1 (Why Hybrid), 11.2 (Enforcement Points), 11.3 (Recommended Architecture). |
+| **TDD-1** | **Architecture decisions** | The requirement asks for explicit, justified choices about how the system is built — not just what it does. The key architectural question for Enforcer is: can a single control point govern all agent action surfaces? The answer is no. A runtime hook sees intent but cannot enforce if the agent bypasses the SDK. A container constrains execution but cannot govern MCP traffic outside its boundary. A proxy controls network but cannot see local file operations. This means the architecture must be hybrid by necessity, not by preference. The decision has direct implications for complexity, deployment friction, and enforcement guarantees. The TDD must show the evaluator that this trade-off is understood and that the hybrid approach is the minimum viable architecture for credible mandatory enforcement. | Hybrid enforcement architecture: no single control point is sufficient. The product combines agent runtime hooks (intent capture), local daemon (policy evaluation and coordination), shell proxy (command mediation), filesystem guard (path enforcement), network proxy (egress control), and MCP gateway (protocol-aware tool governance). Three deployment topologies supported: host-based pilot (lowest friction), secure-container (high assurance for local dev), and remote-workspace (strongest tamper resistance for enterprise). Five logical layers: experience, agent runtime, enforcement, control plane, and observability/intelligence. | Section 11 (Architecture Overview), specifically 11.1 (Why Hybrid), 11.2 (Enforcement Points), 11.3 (Recommended Architecture). |
 | **TDD-2** | **Where the interception layer sits** | This is the most tactically important TDD question because it determines what the product can actually enforce versus what it can only observe. Each interception position has a different combination of semantic visibility (does it understand what the agent is trying to do?), enforcement strength (can it actually block the action?), and bypass resistance (can the agent or developer circumvent it?). No single position scores high on all three, which is why the architecture must layer multiple positions. The evaluator wants to see that the team understands these trade-offs and has made deliberate choices about which positions to implement first and which to defer. | Nine enforcement points analyzed with strengths, weaknesses, and best use: agent runtime hook (high context, low enforcement), local daemon (coordination, tamper resistance), shell proxy (strong command mediation, misses non-shell actions), filesystem guard (path enforcement, limited to file ops), network proxy (egress control, limited semantic visibility), MCP gateway (protocol-aware, only covers MCP traffic), secure container (strong isolation, not sufficient alone), IDE extension (good UX, weak enforcement), VDI/remote workspace (strong centralization, high friction). The interception layer is distributed — not a single insertion point — with each position compensating for the weaknesses of the others. | Section 11.2 (Enforcement Points table), Section 11.4 (Deployment Topologies), Section 11.5 (Secure Container Analysis). |
 | **TDD-3** | **Policy model** | The policy model is what makes the product configurable rather than hardcoded, and what makes it enterprise-ready rather than demo-only. "Configurable" is not enough — the model must support hierarchical inheritance because enterprises do not have flat permission structures. An organization-wide baseline must be non-negotiable; team-level and developer-local rules must be able to add restrictions but never weaken the baseline. The policy object must be expressive enough to encode real rules (path patterns, host allowlists, command classifications, data sensitivity labels, approval routing) while remaining understandable to administrators who are not policy-language experts. Shipping opinionated defaults is critical for time-to-value: a customer should see enforcement working within minutes of deployment, not after weeks of policy authoring. | Hierarchical inheritance (org → team → repo → local), where lower levels can tighten but never weaken baselines. Policy object schema: Subject (agent/session/user/team/environment), Action (read/write/exec/install/connect/query/invoke/prompt-submit), Resource (file path/host/secret/database/MCP server/tool/model endpoint), Conditions (data classification/environment/destination/package source/path scope/approval context), Effect (allow/deny/require approval/redact/quarantine/simulate/alert), Logging mode, Approval mode. Six decision types. Opinionated defaults shipped out of the box covering the most common enterprise security concerns. | Section 12 (Policy and Governance Model), FR-3 (Policy Engine). |
 | **TDD-4** | **Audit log schema** | The audit log schema defines the evidentiary foundation of the entire product. If the schema is too sparse, security reviewers cannot reconstruct what happened. If it is too verbose, logs become noisy and expensive to store. If it lacks correlation IDs, investigators cannot follow action chains across sessions. If it captures raw sensitive payloads, the audit system itself becomes a liability. The schema must balance four tensions: completeness (capture everything needed for forensics), privacy (redact everything that should not be stored), performance (emit events without blocking the action path), and usability (structure events so a reviewer can navigate them without deep system knowledge). The "meaningfully read" requirement from MVP-3 flows directly into this schema — every field must earn its place by contributing to reviewer comprehension. | Normalized event schema: timestamp (ISO 8601 UTC), actor identity (user ID + agent type + agent instance + session ID), environment context (workspace, repo, branch, environment tier, deployment mode), action type, resource target, payload summary (redacted as appropriate per policy), policy evaluated and version, decision returned, approval state (not required/pending/approved/denied/expired), approver identity + rationale + scope + expiry (when applicable), observed execution result, content hashes for integrity verification, correlation IDs for session and delegation tracing. Events are append-only (no UPDATE or DELETE), immutable, and privacy-aware with configurable redaction applied before storage. | FR-2 (Action Normalization — full schema), FR-5 (Audit Trail and Session Replay). |
@@ -113,23 +113,23 @@ The venture prompt states: *"Cover architecture decisions, where the interceptio
 
 ### 0.4 Peer Review Reference
 
-A detailed comparison of this PRD (Claude-authored) against the Codex-authored Peer PRD (`AA_Firewall_PRD_Peer.md`) is provided in **Appendix B** at the end of this document. It includes requirement-by-requirement scoring, unique additions from each PRD, a summary table, Codex's review comments on the comparison, and a recommendation disposition tracker.
+A detailed comparison of this PRD (Claude-authored) against the Codex-authored Peer PRD (`Enforcer_PRD_Peer.md`) is provided in **Appendix B** at the end of this document. It includes requirement-by-requirement scoring, unique additions from each PRD, a summary table, Codex's review comments on the comparison, and a recommendation disposition tracker.
 
 ---
 
 ## 1. Executive Summary
 
-AA Firewall is a mandatory security and policy control plane for AI coding agents operating in developer environments. It sits between the agent and the systems the agent can affect — file systems, shells, package managers, network connections, credentials, databases, MCP-connected tools, and model-context pathways — intercepting actions, evaluating them against organizational governance policy and developer-local guardrails, enforcing allow, deny, and approval decisions, and producing security-grade audit trails that make agent activity reviewable, reproducible, and governable.
+Enforcer is a mandatory security and policy control plane for AI coding agents operating in developer environments. It sits between the agent and the systems the agent can affect — file systems, shells, package managers, network connections, credentials, databases, MCP-connected tools, and model-context pathways — intercepting actions, evaluating them against organizational governance policy and developer-local guardrails, enforcing allow, deny, and approval decisions, and producing security-grade audit trails that make agent activity reviewable, reproducible, and governable.
 
 The product thesis is that AI coding agents such as Claude Code, Cursor, GitHub Copilot agents, OpenAI Codex, and MCP-driven workflows are gaining unprecedented access to source code, terminals, package ecosystems, API keys, cloud accounts, internal databases, and production-adjacent infrastructure, while most organizations still rely on security controls designed for human developers rather than autonomous systems acting at machine speed. The resulting gap is not simply observability; it is a lack of deterministic governance over what the agent can do, where it can send data, which resources it can access, and how incidents can be reconstructed after the fact.
 
-AA Firewall's wedge is therefore the security and governance blocker that prevents broad rollout of coding agents inside mid-market and enterprise engineering organizations. The first job of the product is to make agent adoption safe enough to approve — not merely visible enough to monitor.
+Enforcer's wedge is therefore the security and governance blocker that prevents broad rollout of coding agents inside mid-market and enterprise engineering organizations. The first job of the product is to make agent adoption safe enough to approve — not merely visible enough to monitor.
 
 ---
 
 ## 2. Product Vision
 
-AA Firewall's vision is to become the default trust boundary for agentic software development: the layer every enterprise inserts between AI coding agents and the environments, tools, protocols, and data those agents touch. In the same way identity providers became mandatory for SaaS access and endpoint agents became mandatory for device governance, AA Firewall aims to become mandatory infrastructure for safe software agents.
+Enforcer's vision is to become the default trust boundary for agentic software development: the layer every enterprise inserts between AI coding agents and the environments, tools, protocols, and data those agents touch. In the same way identity providers became mandatory for SaaS access and endpoint agents became mandatory for device governance, Enforcer aims to become mandatory infrastructure for safe software agents.
 
 The long-term product promise is that every sensitive action an AI coding agent attempts should be:
 
@@ -138,7 +138,7 @@ The long-term product promise is that every sensitive action an AI coding agent 
 - **Replayable** — reconstructable as a causal chain of intent, action, decision, and observed effect for forensic review.
 - **Blockable in real time** — stoppable before damage occurs when policy demands it.
 
-Over time, AA Firewall should evolve from a point solution for coding-agent safety into the unified control plane for agentic execution across local developer machines, secure containers, remote workspaces, CI/CD runners, MCP ecosystems, network egress, secrets stores, databases, model-context pathways, and agent-to-agent delegation chains.
+Over time, Enforcer should evolve from a point solution for coding-agent safety into the unified control plane for agentic execution across local developer machines, secure containers, remote workspaces, CI/CD runners, MCP ecosystems, network egress, secrets stores, databases, model-context pathways, and agent-to-agent delegation chains.
 
 ---
 
@@ -182,7 +182,7 @@ The practical consequence is deployment friction. Security and platform teams sl
 - Who approved an exception, and why?
 - What evidence exists for post-incident investigation?
 
-These unanswered questions are the single largest blocker to enterprise-wide coding-agent adoption. AA Firewall exists to answer them.
+These unanswered questions are the single largest blocker to enterprise-wide coding-agent adoption. Enforcer exists to answer them.
 
 ---
 
@@ -198,7 +198,7 @@ Enterprise interest in agentic development is rising because buyers expect meani
 
 ### 4.3 Control Points Are Consolidating
 
-The timing is favorable because the tool surface is consolidating into identifiable enforcement seams. MCP-based tool invocation provides a protocol-layer insertion point. Agent orchestration layers create delegation-tracking opportunities. Containerized workspaces and remote development environments create isolation boundaries. Enterprise AI platform governance is emerging as a recognized category. These architectural trends create concrete integration points where AA Firewall can insert policy without requiring a complete rebuild of the developer stack.
+The timing is favorable because the tool surface is consolidating into identifiable enforcement seams. MCP-based tool invocation provides a protocol-layer insertion point. Agent orchestration layers create delegation-tracking opportunities. Containerized workspaces and remote development environments create isolation boundaries. Enterprise AI platform governance is emerging as a recognized category. These architectural trends create concrete integration points where Enforcer can insert policy without requiring a complete rebuild of the developer stack.
 
 ### 4.4 Market Is Fragmented
 
@@ -266,17 +266,17 @@ Needs dashboard-level evidence that governance is active, policies are enforced,
 
 2. **Action chains, not isolated events.** Govern the full causal chain from agent intent through tool invocation through system effect. An isolated log of "file written" is not governance; the chain of "agent received task → planned action → evaluated policy → executed or blocked → observed result" is governance.
 
-3. **Protocol-aware by default.** Especially for MCP and model-context flows. Deep protocol mediation is how AA Firewall differentiates from generic endpoint tools that see only OS-level events without semantic understanding of what the agent is doing.
+3. **Protocol-aware by default.** Especially for MCP and model-context flows. Deep protocol mediation is how Enforcer differentiates from generic endpoint tools that see only OS-level events without semantic understanding of what the agent is doing.
 
 4. **Enterprise baselines plus developer-local guardrails.** Organization-level policies define non-negotiable constraints. Teams and developers can add stricter rules but never weaken organizational baselines. This mirrors how enterprises actually operate: central mandate plus local customization.
 
 5. **Explainable decisions.** Every policy outcome must be understandable to both developers (who need to know why they were blocked) and security reviewers (who need to know why something was allowed). Silent failures erode trust; opaque decisions erode adoption.
 
-6. **Containers as substrate, not as the sole answer.** Secure containers provide strong isolation for filesystem, process, and network enforcement. But containers alone do not govern MCP traffic outside the runtime, secrets accessed through external identity systems, data leaked into model context, agent-to-agent delegation, or database activity through remote tools. AA Firewall should use containers as a foundational enforcement layer within a broader defense-in-depth architecture.
+6. **Containers as substrate, not as the sole answer.** Secure containers provide strong isolation for filesystem, process, and network enforcement. But containers alone do not govern MCP traffic outside the runtime, secrets accessed through external identity systems, data leaked into model context, agent-to-agent delegation, or database activity through remote tools. Enforcer should use containers as a foundational enforcement layer within a broader defense-in-depth architecture.
 
 7. **Low-friction developer experience.** Approvals and blocks should be exception-based and context-aware so that safe work stays fast. If the product feels like a heavy security overlay that blocks normal development, it will be bypassed or abandoned.
 
-8. **Agent-native architecture.** The product must model the development environment as inherently multi-agent. A single "coding agent" often delegates to tool agents, MCP servers, retrieval agents, CI agents, database tools, and remote model providers. AA Firewall must govern not only direct actions but delegated actions and inter-agent communication.
+8. **Agent-native architecture.** The product must model the development environment as inherently multi-agent. A single "coding agent" often delegates to tool agents, MCP servers, retrieval agents, CI agents, database tools, and remote model providers. Enforcer must govern not only direct actions but delegated actions and inter-agent communication.
 
 ---
 
@@ -349,15 +349,15 @@ This subsection specifies which coding agents, platforms, and modes the MVP prot
 
 **Why Claude Code is the strongest MVP target:**
 
-- **Local execution model.** Claude Code runs entirely on the developer's machine. Every file write, shell command, and network call originates locally, which means AA Firewall's enforcement layer can intercept actions before they reach the operating system or network. There is no cloud-delegated execution to create visibility gaps.
+- **Local execution model.** Claude Code runs entirely on the developer's machine. Every file write, shell command, and network call originates locally, which means Enforcer's enforcement layer can intercept actions before they reach the operating system or network. There is no cloud-delegated execution to create visibility gaps.
 - **Hooks system.** Claude Code exposes a configurable hooks API (via `settings.json`) that fires before and after tool calls — file edits, shell commands, MCP invocations, and notifications. This provides a natural, supported insertion point for pre-execution policy evaluation without requiring reverse engineering or unsupported patching.
-- **Approval surface.** Claude Code already has a permission model with approval prompts for file edits, shell commands, and MCP tool invocations inside VS Code. AA Firewall can augment this existing approval surface with policy-driven decisions and structured audit logging, making the integration feel native rather than bolted on.
-- **CLI mode.** Claude Code operates both as a VS Code extension and as a standalone CLI (`claude`). Supporting both modes means AA Firewall can govern agent activity inside the IDE and in terminal-only workflows, covering the two most common enterprise developer environments.
+- **Approval surface.** Claude Code already has a permission model with approval prompts for file edits, shell commands, and MCP tool invocations inside VS Code. Enforcer can augment this existing approval surface with policy-driven decisions and structured audit logging, making the integration feel native rather than bolted on.
+- **CLI mode.** Claude Code operates both as a VS Code extension and as a standalone CLI (`claude`). Supporting both modes means Enforcer can govern agent activity inside the IDE and in terminal-only workflows, covering the two most common enterprise developer environments.
 - **Enterprise adoption.** Claude Code has significant enterprise traction. Targeting it first means the prototype demonstrates value against the agent environment most likely to be under security review at prospective customers.
 
-**What AA Firewall intercepts on Claude Code:**
+**What Enforcer intercepts on Claude Code:**
 
-| Action Surface | Claude Code Behavior | AA Firewall Interception |
+| Action Surface | Claude Code Behavior | Enforcer Interception |
 |---|---|---|
 | File writes | Agent proposes edits via Edit/Write tools; user sees diff in VS Code | Filesystem guard evaluates path policy before write lands; blocks writes outside project root; logs path + content hash + decision |
 | File reads | Agent reads files via Read tool | Filesystem guard evaluates read policy; blocks reads of sensitive host paths (e.g., ~/.ssh, ~/.aws); logs access |
@@ -369,14 +369,14 @@ This subsection specifies which coding agents, platforms, and modes the MVP prot
 
 **Why Cursor as the secondary target:**
 
-- **MCP-native architecture.** Cursor relies heavily on MCP servers to expose tools, data, and actions to its agent. This makes MCP the natural insertion point — AA Firewall's MCP gateway sits between Cursor's agent and the MCP servers it calls, providing protocol-aware governance at the tool invocation layer.
-- **Demonstrates cross-agent value.** Showing AA Firewall governing both Claude Code (via hooks + proxies) and Cursor (via MCP gateway) in a single demo proves the product is agent-neutral — the same policy engine and audit trail govern different agents through different integration mechanisms.
+- **MCP-native architecture.** Cursor relies heavily on MCP servers to expose tools, data, and actions to its agent. This makes MCP the natural insertion point — Enforcer's MCP gateway sits between Cursor's agent and the MCP servers it calls, providing protocol-aware governance at the tool invocation layer.
+- **Demonstrates cross-agent value.** Showing Enforcer governing both Claude Code (via hooks + proxies) and Cursor (via MCP gateway) in a single demo proves the product is agent-neutral — the same policy engine and audit trail govern different agents through different integration mechanisms.
 - **VS Code fork.** Cursor is built on VS Code, so the VS Code extension and IDE-level integration work developed for Claude Code can be partially reused.
 - **Enterprise presence.** Cursor claims 50,000+ enterprises on its platform. It is one of the most widely deployed coding agents alongside Claude Code.
 
-**What AA Firewall intercepts on Cursor:**
+**What Enforcer intercepts on Cursor:**
 
-| Action Surface | Cursor Behavior | AA Firewall Interception |
+| Action Surface | Cursor Behavior | Enforcer Interception |
 |---|---|---|
 | MCP tool invocations | Agent calls MCP servers for file, shell, search, database, and API tools | MCP gateway evaluates server identity + tool + method + payload against policy; blocks unauthorized invocations; logs full request/response metadata |
 | File writes | Agent writes files through editor or MCP file tools | Filesystem guard (same as Claude Code) evaluates path policy |
@@ -387,7 +387,7 @@ This subsection specifies which coding agents, platforms, and modes the MVP prot
 
 **Why Codex is tertiary, not primary:**
 
-- **Cloud-delegated execution.** Codex can delegate tasks to cloud-based execution environments outside the developer's local machine. Actions that execute remotely cannot be intercepted by a local enforcement layer. AA Firewall must be honest about this visibility gap rather than claiming false completeness.
+- **Cloud-delegated execution.** Codex can delegate tasks to cloud-based execution environments outside the developer's local machine. Actions that execute remotely cannot be intercepted by a local enforcement layer. Enforcer must be honest about this visibility gap rather than claiming false completeness.
 - **VS Code extension mode is local.** When Codex operates through its VS Code extension for local edit and run actions, those actions are interceptable using the same filesystem guard, shell proxy, and network proxy used for Claude Code.
 - **MVP approach:** Support Codex in "visibility mode" — intercept and govern locally-initiated actions; tag remotely-delegated actions as partially observable; surface explicit warnings in the audit trail when actions cannot be fully governed because execution occurred outside the local runtime.
 
@@ -405,30 +405,30 @@ This subsection specifies which coding agents, platforms, and modes the MVP prot
 
 #### 8.4.5 MVP Demo Scenario
 
-The prototype demonstration should show AA Firewall governing a real coding agent performing a real task in real time. The recommended demo flow:
+The prototype demonstration should show Enforcer governing a real coding agent performing a real task in real time. The recommended demo flow:
 
-**Setup:** Developer has a project open in VS Code with Claude Code active. AA Firewall is running with default enterprise policies (deny writes outside project root, deny non-allowlisted network hosts, require approval for high-risk shell commands).
+**Setup:** Developer has a project open in VS Code with Claude Code active. Enforcer is running with default enterprise policies (deny writes outside project root, deny non-allowlisted network hosts, require approval for high-risk shell commands).
 
 **Demo sequence:**
 
-1. **Safe work proceeds without friction.** Developer asks Claude Code to refactor a function. Agent reads files inside the project, writes modified files inside the project. AA Firewall evaluates each action, allows it, and logs it silently. The developer sees no interruption — safe work is fast.
+1. **Safe work proceeds without friction.** Developer asks Claude Code to refactor a function. Agent reads files inside the project, writes modified files inside the project. Enforcer evaluates each action, allows it, and logs it silently. The developer sees no interruption — safe work is fast.
 
-2. **File write outside project root — blocked.** Agent attempts to write a configuration file to `~/.config/`. AA Firewall's filesystem guard evaluates the path, matches the "deny writes outside project root" policy, and blocks the write. The developer sees a clear explanation in VS Code: "Blocked: write to ~/.config/ denied by policy 'project-boundary'. The agent may only write to files within /Users/dev/project/."
+2. **File write outside project root — blocked.** Agent attempts to write a configuration file to `~/.config/`. Enforcer's filesystem guard evaluates the path, matches the "deny writes outside project root" policy, and blocks the write. The developer sees a clear explanation in VS Code: "Blocked: write to ~/.config/ denied by policy 'project-boundary'. The agent may only write to files within /Users/dev/project/."
 
-3. **Destructive shell command — approval required (non-blocking).** Agent attempts to run `rm -rf node_modules && npm install`. AA Firewall's hook handler matches the `rm -rf` pattern via the policy engine and creates an approval request. The hook exits immediately with a deny code — the agent receives a message explaining approval is required. A reviewer approves via the Hub Console or Sentinel Console. The developer retries the command — this time the hook finds the active approval and exits 0, allowing execution. Approval decision is logged with approver identity and rationale.
+3. **Destructive shell command — approval required (non-blocking).** Agent attempts to run `rm -rf node_modules && npm install`. Enforcer's hook handler matches the `rm -rf` pattern via the policy engine and creates an approval request. The hook exits immediately with a deny code — the agent receives a message explaining approval is required. A reviewer approves via the Hub Console or Sentinel Console. The developer retries the command — this time the hook finds the active approval and exits 0, allowing execution. Approval decision is logged with approver identity and rationale.
 
-4. **Network call to unknown host — blocked.** Agent attempts to `curl https://unknown-pastebin.io/upload` to share a code snippet. AA Firewall's network proxy checks the host against the allowlist, finds no match, and blocks the request. Agent receives an error with explanation. Event is logged.
+4. **Network call to unknown host — blocked.** Agent attempts to `curl https://unknown-pastebin.io/upload` to share a code snippet. Enforcer's network proxy checks the host against the allowlist, finds no match, and blocks the request. Agent receives an error with explanation. Event is logged.
 
 5. **Security reviewer opens the Hub Console.** A security engineer opens the Hub Console (port 9201), navigates to Sessions, searches for the session, and sees the full timeline: every action the agent attempted, every policy decision, the approval workflow with approver identity, the blocked actions with rationale, and the final outcomes. The reviewer can drill down from Analytics to Search to Session detail. The reviewer can also navigate to the Enterprise Analytics page for org-wide enforcement metrics, blocked operation rankings, and developer group classifications. The session is exportable as an evidence package via the Export page.
 
-6. **(Optional — secondary demo) Cursor MCP governance.** Switch to Cursor. Agent invokes an MCP tool to query a database. AA Firewall's MCP gateway intercepts the tool call, evaluates the server + method + payload, and blocks a query that would return customer PII. The same audit console shows both the Claude Code session and the Cursor session under unified governance.
+6. **(Optional — secondary demo) Cursor MCP governance.** Switch to Cursor. Agent invokes an MCP tool to query a database. Enforcer's MCP gateway intercepts the tool call, evaluates the server + method + payload, and blocks a query that would return customer PII. The same audit console shows both the Claude Code session and the Cursor session under unified governance.
 
 #### 8.4.6 What Belongs in the TDD (Not Here)
 
-The following implementation-level decisions are documented in the Technical Design Document (`AA_Firewall_TDD_Final_2.md`). Key decisions made:
+The following implementation-level decisions are documented in the Technical Design Document (`Enforcer_TDD_Final_2.md`). Key decisions made:
 
 - **Technology stack**: Go (statically compiled, `CGO_ENABLED=0`) for all 5 binaries (daemon, hook handler, central, client, authseed). Next.js 15 + React + shadcn/ui + Tailwind CSS for dual console builds.
-- **Hook mechanism**: Claude Code hooks API integration via `aafirewall-hook` binary reading JSON from stdin with project root walk-up detection, logging to `~/.aafirewall/hook.log`.
+- **Hook mechanism**: Claude Code hooks API integration via `enforcer-hook` binary reading JSON from stdin with project root walk-up detection, logging to `~/.enforcer/hook.log`.
 - **Policy language**: Versioned YAML policy bundles with Ed25519 signing and monotonic version enforcement.
 - **Audit store**: PostgreSQL (append-only, no UPDATE or DELETE) with decision normalization and unlimited query limit.
 - **Console stack**: Dual builds (`out-hub` for port 9201, `out-sentinel` for port 9100) embedded via `go:embed`. Hub Console with admin/reviewer RBAC, Sentinel Console with operator role.
@@ -540,7 +540,7 @@ At minimum, the audit trail must record secret-access attempts and policy outcom
 
 ### FR-8: VS Code Integration
 
-AA Firewall must provide a VS Code extension or companion integration that can:
+Enforcer must provide a VS Code extension or companion integration that can:
 
 - Display agent action approvals natively within the editor.
 - Show policy decisions and blocked actions with explanations.
@@ -567,9 +567,9 @@ Where an action happens outside the local or governed runtime, the product must 
 
 ### FR-10: Security Console (Dual Console Architecture)
 
-AA Firewall implements two separate web-based consoles serving different audiences:
+Enforcer implements two separate web-based consoles serving different audiences:
 
-**Hub Console** (port 9201, served by `aafirewall-central`, admin/reviewer RBAC):
+**Hub Console** (port 9201, served by `enforcer-central`, admin/reviewer RBAC):
 - Dashboard with org-wide enforcement metrics.
 - Sessions list with cross-Sentinel session inspection.
 - Approvals management for reviewing and acting on pending approvals.
@@ -578,7 +578,7 @@ AA Firewall implements two separate web-based consoles serving different audienc
 - Policies management for authoring, viewing, and deploying policy bundles.
 - Enterprise Analytics with org-wide blocked operations, approval bottlenecks, per-developer enforcement impact, and developer group classifications (Compliant Developer, High-Friction Developer, etc.).
 
-**Sentinel Console** (port 9100, served by `aafirewall-daemon`, operator role):
+**Sentinel Console** (port 9100, served by `enforcer-daemon`, operator role):
 - Dashboard with local enforcement metrics for the governed developer.
 - Sessions list filtered to the governed developer's sessions.
 - Search and filter the developer's own audit logs.
@@ -589,7 +589,7 @@ Both consoles use `governed_user` from the daemon health endpoint for data filte
 
 ### FR-11: Developer Transparency
 
-When AA Firewall blocks or gates an action, it must provide:
+When Enforcer blocks or gates an action, it must provide:
 
 - A clear reason for the block.
 - The specific rule or policy that matched.
@@ -636,7 +636,7 @@ Initial support for macOS and Linux development environments. Windows support as
 
 No single enforcement point fully governs all relevant action surfaces. A runtime hook alone sees intent but cannot guarantee enforcement if the agent bypasses the SDK or uses unmanaged tools. A container alone constrains execution but may not understand agent-level context, approval semantics, or MCP-specific payloads. A proxy alone controls network traffic but cannot govern local filesystem or in-memory operations.
 
-AA Firewall must therefore adopt a hybrid enforcement architecture that combines multiple complementary control points.
+Enforcer must therefore adopt a hybrid enforcement architecture that combines multiple complementary control points.
 
 ### 11.2 Enforcement Points
 
@@ -715,14 +715,14 @@ Containers are a powerful security primitive for AI agents because they create i
 - Database activity through external tools or services.
 - Host compromise risk from dangerous configurations (--privileged, Docker socket mounting).
 
-**Dangerous configurations AA Firewall must forbid or flag:**
+**Dangerous configurations Enforcer must forbid or flag:**
 
 - Running agent containers with `--privileged`.
 - Mounting `/var/run/docker.sock` into the container.
 - Broad host filesystem mounts exposing `/`, home directories, or credential stores.
 - Running as root with unnecessary capabilities.
 
-**Product position:** Containers are a foundational enforcement substrate for AA Firewall, not the complete solution. The product must extend beyond the container boundary through protocol-aware controls, network governance, MCP mediation, secret brokerage, and model-context protection.
+**Product position:** Containers are a foundational enforcement substrate for Enforcer, not the complete solution. The product must extend beyond the container boundary through protocol-aware controls, network governance, MCP mediation, secret brokerage, and model-context protection.
 
 ---
 
@@ -870,7 +870,7 @@ The venture brief specifies choosing one depth area and going deep. **Human-in-t
 **Delivered:**
 
 - 5 statically compiled Go binaries (daemon, hook handler, central, client, authseed) with zero runtime dependencies.
-- Claude Code integration via hooks API with project root walk-up detection and logging to `~/.aafirewall/hook.log`.
+- Claude Code integration via hooks API with project root walk-up detection and logging to `~/.enforcer/hook.log`.
 - Mandatory control over file system, shell execution, and network egress.
 - Hierarchical policy engine with 13 default rules organized into 8 canned policy packs.
 - Non-blocking approval workflow: hook exits immediately, developer retries after approval. Three scope types (single-use, time-bounded, session-scoped).
@@ -916,13 +916,13 @@ The venture brief specifies choosing one depth area and going deep. **Human-in-t
 
 ### 17.1 Category Position
 
-AA Firewall is best positioned as a **runtime security and governance layer for AI coding agents** — not a generic "AI security" vendor, not an LLM guardrails tool, and not an endpoint monitoring product. The sharper message is "runtime governance for AI coding agents," with initial focus on engineering organizations where security approval is the gating factor for deployment at scale.
+Enforcer is best positioned as a **runtime security and governance layer for AI coding agents** — not a generic "AI security" vendor, not an LLM guardrails tool, and not an endpoint monitoring product. The sharper message is "runtime governance for AI coding agents," with initial focus on engineering organizations where security approval is the gating factor for deployment at scale.
 
 The market is fragmented rather than settled into a single category. The space is splitting across deterministic access control, continuous observability, behavioral tracking, intent-based authorization, and escalation controls — which creates room for a focused product aimed specifically at software-development agents.
 
 ### 17.2 Positioning Statement
 
-AA Firewall is the mandatory enforcement and governance layer for AI coding agents, giving enterprises real-time control over what agents can read, write, execute, call, and disclose across developer environments, secure containers, MCP tools, networks, and model workflows.
+Enforcer is the mandatory enforcement and governance layer for AI coding agents, giving enterprises real-time control over what agents can read, write, execute, call, and disclose across developer environments, secure containers, MCP tools, networks, and model workflows.
 
 ### 17.3 Wedge Go-to-Market Motion
 
@@ -935,13 +935,13 @@ Use secure-container deployment as the fastest path to high-assurance pilots whe
 
 ### 17.4 GTM Positioning Against Adjacent Categories
 
-| Adjacent Category | Their Limitation | AA Firewall Message |
+| Adjacent Category | Their Limitation | Enforcer Message |
 |---|---|---|
-| **LLM guardrails** | Focus on prompt/response filtering, not machine-level actions | AA Firewall governs real actions on real systems — files, shells, networks, tools |
-| **Traditional endpoint / developer security** | Built for human users, not autonomous agents at machine speed | AA Firewall is agent-aware and protocol-driven for coding tools |
-| **Broad AI security platforms** | Span model scanning, red teaming, runtime defense across many AI use cases | AA Firewall is purpose-built for the coding-agent rollout decision |
-| **IDE / agent platform vendors** | Native controls are vendor-specific, not neutral enforcement | AA Firewall is the independent cross-agent governance layer |
-| **Sandbox / workspace vendors** | Strong isolation but not full policy/governance products | AA Firewall adds policy, identity, approvals, and evidence on top of isolation |
+| **LLM guardrails** | Focus on prompt/response filtering, not machine-level actions | Enforcer governs real actions on real systems — files, shells, networks, tools |
+| **Traditional endpoint / developer security** | Built for human users, not autonomous agents at machine speed | Enforcer is agent-aware and protocol-driven for coding tools |
+| **Broad AI security platforms** | Span model scanning, red teaming, runtime defense across many AI use cases | Enforcer is purpose-built for the coding-agent rollout decision |
+| **IDE / agent platform vendors** | Native controls are vendor-specific, not neutral enforcement | Enforcer is the independent cross-agent governance layer |
+| **Sandbox / workspace vendors** | Strong isolation but not full policy/governance products | Enforcer adds policy, identity, approvals, and evidence on top of isolation |
 
 ---
 
@@ -971,7 +971,7 @@ These are scenario-planning figures, not precise forecasts. The strategic point:
 
 ### 19.1 Competitive Map
 
-| Category | Examples | What They Do Well | Weakness vs. AA Firewall | Threat Type |
+| Category | Examples | What They Do Well | Weakness vs. Enforcer | Threat Type |
 |---|---|---|---|---|
 | **AI gateway / LLM firewall vendors** | Various prompt/model gateway products | Prompt inspection, model routing, API-boundary policy | Weak machine-action enforcement; limited endpoint and MCP context | Adjacent |
 | **Endpoint / developer security tools** | EDR, SAST, code review, CI security | Strong device visibility, process/filesystem monitoring | Built for humans, not agent intent or MCP workflows | Substitute / adjacent |
@@ -983,7 +983,7 @@ These are scenario-planning figures, not precise forecasts. The strategic point:
 
 ### 19.2 Competitive Conclusion
 
-The most defensible position is not "another AI security dashboard," but **"the control plane where agent intent meets mandatory enterprise policy."** AA Firewall wins when it provides deeper enforcement, better protocol awareness, stronger auditability, and lower operational friction than stitching together endpoint tools, network controls, model gateways, container runtimes, and custom policy scripts.
+The most defensible position is not "another AI security dashboard," but **"the control plane where agent intent meets mandatory enterprise policy."** Enforcer wins when it provides deeper enforcement, better protocol awareness, stronger auditability, and lower operational friction than stitching together endpoint tools, network controls, model gateways, container runtimes, and custom policy scripts.
 
 The largest medium-term threat is bundling by incumbent coding-assistant vendors that already offer some approvals, analytics, and admin controls. However, that same trend validates demand and may increase the need for an agent-neutral policy layer, especially in enterprises that mix vendors, require independent controls, or want stronger enforcement than an IDE-native settings panel can provide.
 
@@ -999,7 +999,7 @@ The largest medium-term threat is bundling by incumbent coding-assistant vendors
 - Secure-container deployment profile with safe defaults.
 - Basic admin console and reviewer workflows.
 
-### 20.2 Differentiators (Why AA Firewall Wins)
+### 20.2 Differentiators (Why Enforcer Wins)
 
 - **MCP-native governance** and payload-aware controls — no legacy endpoint tool understands MCP semantics.
 - **Unified policy** over agent actions, data flows, and model-context exposure — one engine governing all surfaces.
@@ -1092,7 +1092,7 @@ $300-$1,200 per governed seat annually, depending on tier and deployment model. 
 3. Which initial depth area creates the strongest market pull: approval UX, MCP governance, or secrets/context protection?
 4. How quickly will major IDE or agent vendors embed native controls that compress this category?
 5. How much of the market wants policy simulation before hard enforcement?
-6. How should AA Firewall represent partially observable cloud tasks (e.g., Codex delegated tasks) in audit reports?
+6. How should Enforcer represent partially observable cloud tasks (e.g., Codex delegated tasks) in audit reports?
 7. What is the minimum viable secrets-governance feature set for launch?
 8. Which SIEM, ticketing, and IAM integrations are most important for the first ten enterprise customers?
 
@@ -1128,10 +1128,10 @@ This sequencing ensures the product is credible at each stage — not a shallow 
 
 ## 26. Appendix B: Peer Review — Claude PRD vs. Codex PRD
 
-> Compared against: `AA_Firewall_PRD_Peer.md` (Codex Peer Draft v1.0, April 26, 2026)
+> Compared against: `Enforcer_PRD_Peer.md` (Codex Peer Draft v1.0, April 26, 2026)
 > Comparison date: April 26, 2026
 
-This appendix compares the requirements coverage between the Claude-authored PRD (`AA_Firewall_PRD.md`) and the Codex-authored Peer PRD (`AA_Firewall_PRD_Peer.md`) against the venture prompt requirements. The goal is to identify which treatment is stronger per requirement and synthesize a best-of-both "New Requirement" for the final product.
+This appendix compares the requirements coverage between the Claude-authored PRD (`Enforcer_PRD.md`) and the Codex-authored Peer PRD (`Enforcer_PRD_Peer.md`) against the venture prompt requirements. The goal is to identify which treatment is stronger per requirement and synthesize a best-of-both "New Requirement" for the final product.
 
 ### B.1 Venture Prompt Requirements
 
@@ -1227,9 +1227,9 @@ The following review comments were contributed by the Codex agent after reviewin
 ## 27. Appendix C: Final Consolidated Requirements and Deliverables (Ratified)
 
 > Status: **Final (ratified requirements; implementation docs pending).** All scope decisions resolved as of April 26, 2026.
-> Decisions made: Cursor is Phase 2 (not Phase 1). Claude Code VS Code extension + CLI is the sole Phase 1 integration. TDD to be authored as `docs/AA_Firewall_TDD.md` based on these requirements.
+> Decisions made: Cursor is Phase 2 (not Phase 1). Claude Code VS Code extension + CLI is the sole Phase 1 integration. TDD to be authored as `docs/Enforcer_TDD.md` based on these requirements.
 
-This appendix presents the authoritative, merged requirements for AA Firewall. Each item integrates the strongest treatment from the Claude PRD and the Codex Peer PRD, as determined by the peer review in Appendix B. This is the definitive reference for the development team.
+This appendix presents the authoritative, merged requirements for Enforcer. Each item integrates the strongest treatment from the Claude PRD and the Codex Peer PRD, as determined by the peer review in Appendix B. This is the definitive reference for the development team.
 
 ### C.1 Prototype Deliverables (from Venture Prompt)
 
@@ -1237,7 +1237,7 @@ This appendix presents the authoritative, merged requirements for AA Firewall. E
 |---|---|---|
 | **D-1** | Working prototype | Functional system that intercepts, inspects, and governs the actions of an AI coding agent in a developer environment. Must pass all requirements in C.2 and all acceptance criteria in C.5. |
 | **D-2** | PRD | This document. Covers user, pain point, market wedge, MVP scope, sequencing rationale, and primary buyer. |
-| **D-3** | TDD | Separate document (`docs/AA_Firewall_TDD.md`, to be authored based on these requirements). Existing design references: `AA_Firewall_TDD_Final_1.md`, `_2.md`, `_3.md`, `_Peer.md`. Covers architecture decisions, interception layer placement, policy model, audit log schema, performance trade-offs, and evolution path. |
+| **D-3** | TDD | Separate document (`docs/Enforcer_TDD.md`, to be authored based on these requirements). Existing design references: `Enforcer_TDD_Final_1.md`, `_2.md`, `_3.md`, `_Peer.md`. Covers architecture decisions, interception layer placement, policy model, audit log schema, performance trade-offs, and evolution path. |
 
 ### C.2 Final MVP Requirements
 
@@ -1255,7 +1255,7 @@ This appendix presents the authoritative, merged requirements for AA Firewall. E
 |---|---|---|
 | **P-1** | Mandatory where promised | Never market observability as enforcement. If the product claims to block an action, it must block it. |
 | **P-2** | Action chains, not isolated events | Govern the full causal chain from agent intent through tool invocation through system effect. |
-| **P-3** | Protocol-aware by default | Deep protocol mediation for MCP and model-context flows — how AA Firewall differentiates from generic endpoint tools. |
+| **P-3** | Protocol-aware by default | Deep protocol mediation for MCP and model-context flows — how Enforcer differentiates from generic endpoint tools. |
 | **P-4** | Enterprise baselines plus local guardrails | Organization-level policies are non-negotiable. Teams and developers can add stricter rules but never weaken baselines. |
 | **P-5** | Explainable decisions | Every policy outcome must be understandable to both developers and security reviewers. |
 | **P-6** | Containers as substrate, not sole answer | Secure containers provide strong isolation but do not govern MCP traffic, external secrets, model context, or agent-to-agent delegation outside the boundary. |
@@ -1363,6 +1363,6 @@ This appendix presents the authoritative, merged requirements for AA Firewall. E
 | **Audit** | Schema validation pass rate | (Events passing minimum schema validation gate) / (Total events emitted). Should be 100% — any failure indicates a bug. | 100% | Continuous, alert on any failure |
 | **Adoption** | Pilot-to-production conversion rate | (Pilot customers that move to production deployment) / (Total pilot customers). | Track from first deployment | Per cohort |
 | **Adoption** | Protected seats per customer | Number of developer seats under active governance per customer account. | Track expansion | Monthly |
-| **Business** | Security approval cycle time | Time from agent rollout request to security team sign-off, measured before and after AA Firewall deployment. | Measure reduction vs. baseline | Per approval event |
+| **Business** | Security approval cycle time | Time from agent rollout request to security team sign-off, measured before and after Enforcer deployment. | Measure reduction vs. baseline | Per approval event |
 | **Trust** | Bypass attempts detected | Count of actions detected outside the governed path (e.g., direct shell bypassing proxy). | Track and alert on any occurrence | Rolling 7-day per deployment |
-| **Trust** | Incident investigation time | Time from incident opened to root cause identified using AA Firewall audit trail and replay. | Measure and optimize | Per incident |
+| **Trust** | Incident investigation time | Time from incident opened to root cause identified using Enforcer audit trail and replay. | Measure and optimize | Per incident |

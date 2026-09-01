@@ -1,21 +1,21 @@
 > Author: Deepankar Das
 
-# AA Firewall Product Requirements Document (Peer Draft)
+# Enforcer Product Requirements Document (Peer Draft)
 
 ## Document Metadata
 
-- Document: `AA_Firewall_PRD_Peer.md`
-- Product: AA Firewall
+- Document: `Enforcer_PRD_Peer.md`
+- Product: Enforcer
 - Version: 1.0 (Peer Draft)
 - Date: April 26, 2026
-- Source Prompt: `docs/AA_Firewall_Prompt.md`
-- Original Venture Prompt Reference: `docs/AA_Firewall_Prompt_aifund.md`
+- Source Prompt: `docs/Enforcer_Prompt.md`
+- Original Venture Prompt Reference: `docs/Enforcer_Prompt_aifund.md`
 
 ---
 
 ## MVP Alignment Matrix (Prompt-Driven)
 
-This section maps the MVP requirements from `AA_Firewall_Prompt.md` to explicit PRD coverage so each requirement is directly addressed.
+This section maps the MVP requirements from `Enforcer_Prompt.md` to explicit PRD coverage so each requirement is directly addressed.
 
 | Req No. | Requirement | Details | Detaills | Integration |
 |---|---|---|---|---|
@@ -30,11 +30,11 @@ This section maps the MVP requirements from `AA_Firewall_Prompt.md` to explicit 
 
 ## 1. Executive Summary
 
-AA Firewall is a runtime security and governance control plane for AI coding agents. It sits between an agent and the systems that agent can affect, intercepting actions before execution, evaluating them against policy, enforcing allow/deny/approval outcomes, and emitting structured audit evidence.
+Enforcer is a runtime security and governance control plane for AI coding agents. It sits between an agent and the systems that agent can affect, intercepting actions before execution, evaluating them against policy, enforcing allow/deny/approval outcomes, and emitting structured audit evidence.
 
 The core market wedge is not generic observability. It is enterprise-enforceable governance for agent actions that currently block broad deployment inside mid-market and enterprise engineering organizations. Teams want productivity from agentic coding, but security and platform leaders cannot approve scaled rollout without deterministic controls and credible forensics.
 
-AA Firewall solves that approval gap by making every governed action attributable, policy-evaluable, and reviewable, while preserving developer velocity through selective approvals and context-aware policy rather than blanket deny rules.
+Enforcer solves that approval gap by making every governed action attributable, policy-evaluable, and reviewable, while preserving developer velocity through selective approvals and context-aware policy rather than blanket deny rules.
 
 ---
 
@@ -52,7 +52,7 @@ As a result, organizations face five recurrent failures:
 - Incident responders cannot reconstruct action chains from prompt to tool call to system effect.
 - Developers experience inconsistent controls that are either too weak (unsafe) or too broad (unusable).
 
-AA Firewall addresses these gaps by turning agent activity into governable runtime operations with enforceable policy decisions and reviewer-grade evidence.
+Enforcer addresses these gaps by turning agent activity into governable runtime operations with enforceable policy decisions and reviewer-grade evidence.
 
 ---
 
@@ -132,11 +132,11 @@ Why this role matters:
 
 ## 6. Product Vision and Positioning
 
-AA Firewall should become the trust boundary between AI coding agents and sensitive execution surfaces in developer workflows.
+Enforcer should become the trust boundary between AI coding agents and sensitive execution surfaces in developer workflows.
 
 Positioning statement:
 
-AA Firewall is the governance layer that makes AI coding agents safe enough for enterprise approval. It does this by enforcing action-level policy at runtime and producing structured audit trails that security teams can actually use.
+Enforcer is the governance layer that makes AI coding agents safe enough for enterprise approval. It does this by enforcing action-level policy at runtime and producing structured audit trails that security teams can actually use.
 
 Strategic position in the stack:
 
@@ -161,7 +161,7 @@ Strategic position in the stack:
 
 The wedge is the security review blocker to scaling coding-agent adoption.
 
-Most organizations are not blocked by agent availability. They are blocked by governance confidence. AA Firewall wins by converting “we cannot approve this” into “we can approve this with enforceable boundaries and evidence.”
+Most organizations are not blocked by agent availability. They are blocked by governance confidence. Enforcer wins by converting “we cannot approve this” into “we can approve this with enforceable boundaries and evidence.”
 
 Initial wedge outcomes:
 
@@ -445,7 +445,7 @@ Exit criteria:
 
 Organizations currently patch together IDE permissions, endpoint controls, and manual review. That approach lacks coherent cross-surface action governance for agents.
 
-AA Firewall differentiation:
+Enforcer differentiation:
 
 - Unified runtime policy decisions across agent actions.
 - Built-in approval workflow tied directly to execution control.
@@ -480,6 +480,6 @@ Initial deployment motion:
 
 ## 20. Summary
 
-AA Firewall should be built and positioned as mandatory runtime governance for AI coding agents, not as passive telemetry. The MVP should prove enforceable policy outcomes, real-time approval handling, and reviewer-grade audit trails across at least two high-risk action surfaces.
+Enforcer should be built and positioned as mandatory runtime governance for AI coding agents, not as passive telemetry. The MVP should prove enforceable policy outcomes, real-time approval handling, and reviewer-grade audit trails across at least two high-risk action surfaces.
 
 This sequencing aligns directly to the source prompt: deliver a functional prototype that demonstrates interception, policy enforcement, auditability, and one deeply implemented differentiation area that makes enterprise approval materially easier.

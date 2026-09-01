@@ -1,8 +1,8 @@
 > Author: Deepankar Das
 
-# AA Firewall — Ubuntu Port + eBPF Kernel Enforcer Implementation Plan
+# Enforcer — Ubuntu Port + eBPF Kernel Enforcer Implementation Plan
 
-> Engineering workplan for (a) porting AA Firewall from macOS to Ubuntu and (b) building the eBPF `KernelEnforcer` against the existing Go interface. Companion to [AA_Firewall_Ubuntu_Kernel_Enforcer.md](AA_Firewall_Ubuntu_Kernel_Enforcer.md), which is the design overview; this document is the step-by-step implementation guide with concrete file paths, line references, and acceptance criteria.
+> Engineering workplan for (a) porting Enforcer from macOS to Ubuntu and (b) building the eBPF `KernelEnforcer` against the existing Go interface. Companion to [Enforcer_Ubuntu_Kernel_Enforcer.md](Enforcer_Ubuntu_Kernel_Enforcer.md), which is the design overview; this document is the step-by-step implementation guide with concrete file paths, line references, and acceptance criteria.
 
 ---
 
@@ -93,12 +93,12 @@ Then everywhere the existing scripts call `chown root:wheel ... || chown root:ro
 | Lines | Today (macOS) | Replacement (Linux) |
 |---|---|---|
 | 58 | `MANAGED_HOOKS_DIR="/Library/Application Support/ClaudeCode"` | `MANAGED_HOOKS_DIR="$(managed_hooks_path | xargs dirname)"` |
-| 60-61 | `PLIST_FILE=...sentinel.plist`, `CLIENT_PLIST_FILE=...sentinel-client.plist` | `UNIT_FILE="/etc/systemd/system/aafirewall-sentinel.service"`, `CLIENT_UNIT_FILE="/etc/systemd/system/aafirewall-sentinel-client.service"` |
-| 222-224 | `launchctl unload "$PLIST_FILE"` | `systemctl stop aafirewall-sentinel aafirewall-sentinel-client \|\| true` |
-| 263-264 | `rm -f "$PLIST_FILE"` etc. | `systemctl disable --now aafirewall-sentinel aafirewall-sentinel-client; rm -f "$UNIT_FILE" "$CLIENT_UNIT_FILE"; systemctl daemon-reload` |
+| 60-61 | `PLIST_FILE=...sentinel.plist`, `CLIENT_PLIST_FILE=...sentinel-client.plist` | `UNIT_FILE="/etc/systemd/system/enforcer-sentinel.service"`, `CLIENT_UNIT_FILE="/etc/systemd/system/enforcer-sentinel-client.service"` |
+| 222-224 | `launchctl unload "$PLIST_FILE"` | `systemctl stop enforcer-sentinel enforcer-sentinel-client \|\| true` |
+| 263-264 | `rm -f "$PLIST_FILE"` etc. | `systemctl disable --now enforcer-sentinel enforcer-sentinel-client; rm -f "$UNIT_FILE" "$CLIENT_UNIT_FILE"; systemctl daemon-reload` |
 | 542-584 | Heredoc emitting `.plist` for sentinel daemon | Heredoc emitting `.service` (template below) |
 | 588-622 | Heredoc emitting `.plist` for client | Same |
-| 631-651 | `launchctl load` + `kickstart` fallback | `systemctl daemon-reload && systemctl enable --now aafirewall-sentinel aafirewall-sentinel-client` |
+| 631-651 | `launchctl load` + `kickstart` fallback | `systemctl daemon-reload && systemctl enable --now enforcer-sentinel enforcer-sentinel-client` |
 | 688-689 | `LaunchDaemon: $PLIST_FILE` summary lines | `Service unit:   $UNIT_FILE` |
 
 Wrap the entire service-management block in `if [[ "$(detect_platform)" == "macos" ]]; then ... else ... fi`. This preserves the macOS path exactly so developers on Mac don't regress.
@@ -107,52 +107,52 @@ Wrap the entire service-management block in `if [[ "$(detect_platform)" == "maco
 
 ```ini
 [Unit]
-Description=AA Firewall Sentinel Daemon
+Description=Enforcer Sentinel Daemon
 After=network-online.target postgresql.service
 Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/aafirewall-daemon
+ExecStart=/usr/local/bin/enforcer-daemon
 Restart=always
 RestartSec=3
 User=root
-EnvironmentFile=/etc/aafirewall/sentinel.env
+EnvironmentFile=/etc/enforcer/sentinel.env
 # Hardening
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/etc/aafirewall /var/log/aafirewall /var/run
+ReadWritePaths=/etc/enforcer /var/log/enforcer /var/run
 PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-Note `EnvironmentFile=/etc/aafirewall/sentinel.env` — write `DATABASE_URL`, `AA_STRICT_MODE`, `AA_CENTRAL_URL`, `DAEMON_PORT`, `CONSOLE_PORT`, and (later) `AA_OSGUARD_MODE` there with mode `0600 root:root`. Equivalent to how the plist embeds env vars today, but keeps secrets out of the unit file (which is world-readable).
+Note `EnvironmentFile=/etc/enforcer/sentinel.env` — write `DATABASE_URL`, `AA_STRICT_MODE`, `AA_CENTRAL_URL`, `DAEMON_PORT`, `CONSOLE_PORT`, and (later) `AA_OSGUARD_MODE` there with mode `0600 root:root`. Equivalent to how the plist embeds env vars today, but keeps secrets out of the unit file (which is world-readable).
 
 **Sentinel client unit file** at `$CLIENT_UNIT_FILE`:
 
 ```ini
 [Unit]
-Description=AA Firewall Sentinel Client (registration + policy sync)
-After=network-online.target aafirewall-sentinel.service
+Description=Enforcer Sentinel Client (registration + policy sync)
+After=network-online.target enforcer-sentinel.service
 Wants=network-online.target
-Requires=aafirewall-sentinel.service
+Requires=enforcer-sentinel.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/aafirewall-client
+ExecStart=/usr/local/bin/enforcer-client
 Restart=always
 RestartSec=5
 User=root
-EnvironmentFile=/etc/aafirewall/sentinel.env
+EnvironmentFile=/etc/enforcer/sentinel.env
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-`Requires=aafirewall-sentinel.service` ensures the client is stopped if the daemon stops, matching today's KeepAlive semantics.
+`Requires=enforcer-sentinel.service` ensures the client is stopped if the daemon stops, matching today's KeepAlive semantics.
 
 ### 3.4 Convert `uninstall.sh`
 
@@ -161,7 +161,7 @@ WantedBy=multi-user.target
 - Lines 70-84: replace the `PLISTS=(...)` array + `launchctl bootout/unload` loop with:
   ```bash
   if [[ "$(detect_platform)" == "linux" ]]; then
-    for unit in aafirewall-sentinel aafirewall-sentinel-client aafirewall-hub; do
+    for unit in enforcer-sentinel enforcer-sentinel-client enforcer-hub; do
       systemctl disable --now "$unit" 2>/dev/null || true
       rm -f "/etc/systemd/system/${unit}.service"
     done
@@ -177,23 +177,23 @@ WantedBy=multi-user.target
 [scripts/deploy_hub.sh](../scripts/deploy_hub.sh) is mostly portable today. The `chown root:wheel || chown root:root` at lines 342, 347, 374 already works on Ubuntu. To bring it under systemd as well, add an optional `--systemd` flag that emits:
 
 ```ini
-# /etc/systemd/system/aafirewall-hub.service
+# /etc/systemd/system/enforcer-hub.service
 [Unit]
-Description=AA Firewall Management Hub
+Description=Enforcer Management Hub
 After=network-online.target postgresql.service
 Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/aafirewall-central
+ExecStart=/usr/local/bin/enforcer-central
 Restart=always
 RestartSec=3
-EnvironmentFile=/etc/aafirewall/hub.env
+EnvironmentFile=/etc/enforcer/hub.env
 User=root
 # Hardening (same as sentinel)
 NoNewPrivileges=true
 ProtectSystem=strict
-ReadWritePaths=/etc/aafirewall /var/log/aafirewall /var/run
+ReadWritePaths=/etc/enforcer /var/log/enforcer /var/run
 
 [Install]
 WantedBy=multi-user.target
@@ -223,14 +223,14 @@ sudo ./scripts/setup-database.sh
 sudo ./scripts/deploy_hub.sh --systemd
 sudo AA_CENTRAL_URL=https://localhost:9200 ./scripts/deploy_sentinel.sh
 
-systemctl status aafirewall-hub aafirewall-sentinel aafirewall-sentinel-client
-sudo systemctl restart aafirewall-sentinel    # confirm Restart=always works
-sudo kill -9 $(pgrep aafirewall-daemon)       # confirm systemd respawns it
+systemctl status enforcer-hub enforcer-sentinel enforcer-sentinel-client
+sudo systemctl restart enforcer-sentinel    # confirm Restart=always works
+sudo kill -9 $(pgrep enforcer-daemon)       # confirm systemd respawns it
 ./scripts/validate.sh --hub-token <token>     # all green
 
 sudo ./scripts/uninstall.sh
-systemctl list-units 'aafirewall-*'           # expect: 0 loaded units
-ls /etc/aafirewall /etc/claude-code 2>/dev/null   # expect: gone
+systemctl list-units 'enforcer-*'           # expect: 0 loaded units
+ls /etc/enforcer /etc/claude-code 2>/dev/null   # expect: gone
 ```
 
 ---
@@ -369,7 +369,7 @@ Each helper must be deterministic (sorted output) so map updates in BPF are diff
 
 ### 4.7 BPF Programs
 
-The C programs follow the templates in [AA_Firewall_Ubuntu_Kernel_Enforcer.md](AA_Firewall_Ubuntu_Kernel_Enforcer.md) Section "Implementation Steps" (steps 1-4). Implementation notes:
+The C programs follow the templates in [Enforcer_Ubuntu_Kernel_Enforcer.md](Enforcer_Ubuntu_Kernel_Enforcer.md) Section "Implementation Steps" (steps 1-4). Implementation notes:
 
 - **`common.h`**: define `MAX_PATH_LEN=256`, `MAX_HOST_LEN=128`, `MAX_ENTRIES=1024`. Keep `struct af_event` ≤ 512 bytes so the ring buffer at 256 KiB holds ~500 events between drains.
 - **`file_guard.c`** (`SEC("lsm/file_open")`): uses `bpf_d_path()` to materialize the absolute path. `bpf_d_path` is gated to a fixed allowlist of LSM hooks in the kernel — `file_open` is on it. Workspace prefix matching requires unrolled loops; cap the prefix at 64 bytes for a single-pass check, fall back to user-space evaluation for longer prefixes.
@@ -491,8 +491,8 @@ Per-syscall overhead target: **< 5 µs at the 99th percentile** for governed UID
 
 | # | Milestone | Definition of Done |
 |---|---|---|
-| M1 | Ubuntu deploy works without eBPF | Fresh Ubuntu 22.04 VM, `deploy_sentinel.sh` succeeds, `systemctl status aafirewall-sentinel` shows `active (running)`, `validate.sh` green |
-| M2 | Uninstall is clean on Ubuntu | After `uninstall.sh`, no aafirewall units, no `/etc/aafirewall`, no `/etc/claude-code/managed-settings.json` |
+| M1 | Ubuntu deploy works without eBPF | Fresh Ubuntu 22.04 VM, `deploy_sentinel.sh` succeeds, `systemctl status enforcer-sentinel` shows `active (running)`, `validate.sh` green |
+| M2 | Uninstall is clean on Ubuntu | After `uninstall.sh`, no enforcer units, no `/etc/enforcer`, no `/etc/claude-code/managed-settings.json` |
 | M3 | `cilium/ebpf` skeleton compiles | `go build ./...` clean on Linux + macOS; new package present; `NewKernelEnforcer()` returns `StubEnforcer` until `AA_OSGUARD_MODE` is set |
 | M4 | BPF programs load in audit mode | On a BPF-LSM-enabled kernel, `AA_OSGUARD_MODE=audit` daemon starts, ring buffer events flow into audit log, denied operations are logged but allowed |
 | M5 | Enforcement | `AA_OSGUARD_MODE=enforce` blocks `cat ~/.ssh/id_rsa` from a non-Claude shell; audit row written; metrics counters tick |
@@ -509,10 +509,10 @@ Each milestone is independently mergeable behind the existing `git` workflow. No
 |---|---|
 | Ubuntu users on kernels without BPF LSM (older 20.04, custom kernels) | Capability probe + `StubEnforcer` fallback + clear error in `/v1/osguard/metrics`; documented kernel requirement in `prepare.sh` |
 | `bpf_d_path()` truncation on long paths (>256 bytes) | Fall back to user-space evaluation for paths that hit the limit; emit a metric so we know how often it happens |
-| systemd `ProtectHome=read-only` blocks legitimate file writes during enforcement decisions | Carve out only required ReadWritePaths; test with `systemd-analyze security aafirewall-sentinel` |
+| systemd `ProtectHome=read-only` blocks legitimate file writes during enforcement decisions | Carve out only required ReadWritePaths; test with `systemd-analyze security enforcer-sentinel` |
 | Policy churn → frequent BPF map updates → kernel verifier overhead | Diff-based `RegisterPolicy` batches updates; throttle to one reload per second under load |
 | Developer notices the eBPF enforcer and tries to unload it | LSM programs cannot be detached without `CAP_SYS_ADMIN`; daemon runs as root and the developer does not |
-| Doc drift between this implementation plan and [AA_Firewall_Ubuntu_Kernel_Enforcer.md](AA_Firewall_Ubuntu_Kernel_Enforcer.md) | This doc cites the design doc by section; update both together when interfaces change |
+| Doc drift between this implementation plan and [Enforcer_Ubuntu_Kernel_Enforcer.md](Enforcer_Ubuntu_Kernel_Enforcer.md) | This doc cites the design doc by section; update both together when interfaces change |
 
 ---
 
@@ -520,7 +520,7 @@ Each milestone is independently mergeable behind the existing `git` workflow. No
 
 The architecture-decision-gate items per [CLAUDE.md](../CLAUDE.md):
 
-1. **Hub Console deployment on Ubuntu** — same systemd unit as the Mac plist, or a separate `aafirewall-hub-console` unit? Plist today couples them.
+1. **Hub Console deployment on Ubuntu** — same systemd unit as the Mac plist, or a separate `enforcer-hub-console` unit? Plist today couples them.
 2. **Managed hooks path** — `/etc/claude-code/managed-settings.json` is the proposal. Anthropic has not formally documented the Linux managed-settings path; need to confirm with Claude Code release notes before shipping.
 3. **eBPF in containers** — Docker rootless mode (referenced in Phase 1 TDD) typically lacks `CAP_BPF`. Should the daemon detect container-mode and disable the eBPF path automatically, or should operators opt in?
 4. **Single-binary embedding of BPF objects** — `bpf2go` embeds the bytecode in the Go binary, but separate BPF objects per kernel arch (`amd64`, `arm64`) inflate binary size. Acceptable, or split into per-arch builds?
@@ -531,8 +531,8 @@ These should be resolved before Milestone M4 lands.
 
 ## 9. References
 
-- Design doc: [AA_Firewall_Ubuntu_Kernel_Enforcer.md](AA_Firewall_Ubuntu_Kernel_Enforcer.md)
-- Final TDD: [AA_Firewall_TDD_Final_2.md](AA_Firewall_TDD_Final_2.md)
-- Final PRD: [AA_Firewall_PRD_Final.md](AA_Firewall_PRD_Final.md)
-- Existing setup guide: [AA_Firewall_SETUP.md](AA_Firewall_SETUP.md)
+- Design doc: [Enforcer_Ubuntu_Kernel_Enforcer.md](Enforcer_Ubuntu_Kernel_Enforcer.md)
+- Final TDD: [Enforcer_TDD_Final_2.md](Enforcer_TDD_Final_2.md)
+- Final PRD: [Enforcer_PRD_Final.md](Enforcer_PRD_Final.md)
+- Existing setup guide: [Enforcer_SETUP.md](Enforcer_SETUP.md)
 - Project rules (mandatory): [../CLAUDE.md](../CLAUDE.md)

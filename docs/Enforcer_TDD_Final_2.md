@@ -1,6 +1,6 @@
 > Author: Deepankar Das
 
-# AA_Firewall Technical Design Document Final
+# Enforcer Technical Design Document Final
 
 ---
 
@@ -8,7 +8,7 @@
 
 ### System Architecture
 
-AA Firewall is a Hub + Sentinel hybrid governance system for AI coding agents. Each developer workstation runs a **Sentinel daemon** (`aafirewall-daemon`, port 9100) that evaluates policy locally and enforces decisions in-path, while a centralized **Management Hub** (`aafirewall-central`) distributes policies, aggregates audit events, and serves admin workflows. The Hub exposes two network interfaces: an mTLS client-facing channel on **port 9200** for Sentinel registration, policy pull, heartbeat, audit push, and approval synchronization, and an admin HTTP interface on **port 9201** for the Hub Console, RBAC-protected API, and approval resolution. All Hub-to-Sentinel communication is authenticated via mutual TLS with certificates loaded from a configurable `CERT_DIR` (default `/etc/aafirewall/certs`). Both the Hub audit store and Hub state store (policy revisions, client snapshots, enforcement state) are backed by **PostgreSQL** via `pgx/v5` connection pools. The system produces four statically compiled Go binaries (`CGO_ENABLED=0`): `aafirewall-daemon`, `aafirewall-hook`, `aafirewall-central`, and `aafirewall-client`. Zero runtime dependencies beyond PostgreSQL.
+Enforcer is a Hub + Sentinel hybrid governance system for AI coding agents. Each developer workstation runs a **Sentinel daemon** (`enforcer-daemon`, port 9100) that evaluates policy locally and enforces decisions in-path, while a centralized **Management Hub** (`enforcer-central`) distributes policies, aggregates audit events, and serves admin workflows. The Hub exposes two network interfaces: an mTLS client-facing channel on **port 9200** for Sentinel registration, policy pull, heartbeat, audit push, and approval synchronization, and an admin HTTP interface on **port 9201** for the Hub Console, RBAC-protected API, and approval resolution. All Hub-to-Sentinel communication is authenticated via mutual TLS with certificates loaded from a configurable `CERT_DIR` (default `/etc/enforcer/certs`). Both the Hub audit store and Hub state store (policy revisions, client snapshots, enforcement state) are backed by **PostgreSQL** via `pgx/v5` connection pools. The system produces four statically compiled Go binaries (`CGO_ENABLED=0`): `enforcer-daemon`, `enforcer-hook`, `enforcer-central`, and `enforcer-client`. Zero runtime dependencies beyond PostgreSQL.
 
 ### Enforcement Model
 
@@ -55,15 +55,15 @@ Two static Next.js builds are embedded in the Go binaries via `go:embed` (`go/in
 - **Hub Console** (`out-hub`), served on port 9201 by `HubHandler()`, for security admins -- policy management, approval resolution, audit search, analytics dashboards, client fleet overview.
 - **Sentinel Console** (`out-sentinel`), served on port 9100 by `SentinelHandler()`, for local developer visibility -- enforcement status, recent decisions, session detail.
 
-The Hub enforces **three RBAC roles**: `admin` (policy CRUD, enforcement toggle, pack apply), `reviewer` (approve/deny approval requests), and `operator` (read-only access to audit, analytics, sessions, policies, clients, approvals). Auth tokens are loaded from environment variables (`AA_ADMIN_TOKEN`, `AA_REVIEWER_TOKEN`, `AA_OPERATOR_TOKEN`), files (`/etc/aafirewall/.*_token`), or encrypted database storage (`authsecrets.LoadTokens()`). The Sentinel daemon enforces `governed_user` filtering so a developer only sees their own audit events. Console navigation supports clickable drill-downs from Analytics dashboards to Search results to Session detail views.
+The Hub enforces **three RBAC roles**: `admin` (policy CRUD, enforcement toggle, pack apply), `reviewer` (approve/deny approval requests), and `operator` (read-only access to audit, analytics, sessions, policies, clients, approvals). Auth tokens are loaded from environment variables (`AA_ADMIN_TOKEN`, `AA_REVIEWER_TOKEN`, `AA_OPERATOR_TOKEN`), files (`/etc/enforcer/.*_token`), or encrypted database storage (`authsecrets.LoadTokens()`). The Sentinel daemon enforces `governed_user` filtering so a developer only sees their own audit events. Console navigation supports clickable drill-downs from Analytics dashboards to Search results to Session detail views.
 
 ### Security Boundaries
 
-The Hub RBAC middleware (`go/internal/central/auth.go`) gates every admin API route (except `GET /api/v1/health`) by role. Policy CRUD and enforcement toggling require `admin`. Approval resolution requires `reviewer+`. All read endpoints require `operator+`. The Sentinel daemon (`go/internal/daemon/auth.go`) enforces its own route-level RBAC. The developer (governed user) has no access to policy editing, credential files, or daemon configuration. Token files at `/etc/aafirewall/` are root-owned. When `AA_ALLOW_LOCAL_POLICY_EDITS` is unset or false, the Sentinel daemon returns HTTP 403 on all policy mutation endpoints.
+The Hub RBAC middleware (`go/internal/central/auth.go`) gates every admin API route (except `GET /api/v1/health`) by role. Policy CRUD and enforcement toggling require `admin`. Approval resolution requires `reviewer+`. All read endpoints require `operator+`. The Sentinel daemon (`go/internal/daemon/auth.go`) enforces its own route-level RBAC. The developer (governed user) has no access to policy editing, credential files, or daemon configuration. Token files at `/etc/enforcer/` are root-owned. When `AA_ALLOW_LOCAL_POLICY_EDITS` is unset or false, the Sentinel daemon returns HTTP 403 on all policy mutation endpoints.
 
 ### Hook Handler
 
-The hook handler (`go/cmd/hookhandler/main.go`) is invoked by Claude Code's `PreToolUse` and `PostToolUse` hooks. It reads JSON tool input from stdin, maps the tool name through `enforcement.GetEnforcementPoint()` to an `ActionRequest`, and POSTs to `http://127.0.0.1:9100/v1/evaluate`. Project root detection walks up from `cwd` looking for `.git/` or `.claude/` directory markers (`findProjectRoot()`), falling back to `cwd` or the `AA_WORKSPACE` environment variable. All hook invocations log to both stderr (visible to Claude Code) and `~/.aafirewall/hook.log` with UTC timestamps. Auth tokens are resolved from `AA_OPERATOR_TOKEN`, `AA_ADMIN_TOKEN`, or `/etc/aafirewall/.*_token` files. Internal orchestration tools (Agent, TodoWrite, Skill) are mapped to `internal.orchestration` action type and governed by `org.allow_internal_tools`.
+The hook handler (`go/cmd/hookhandler/main.go`) is invoked by Claude Code's `PreToolUse` and `PostToolUse` hooks. It reads JSON tool input from stdin, maps the tool name through `enforcement.GetEnforcementPoint()` to an `ActionRequest`, and POSTs to `http://127.0.0.1:9100/v1/evaluate`. Project root detection walks up from `cwd` looking for `.git/` or `.claude/` directory markers (`findProjectRoot()`), falling back to `cwd` or the `AA_WORKSPACE` environment variable. All hook invocations log to both stderr (visible to Claude Code) and `~/.enforcer/hook.log` with UTC timestamps. Auth tokens are resolved from `AA_OPERATOR_TOKEN`, `AA_ADMIN_TOKEN`, or `/etc/enforcer/.*_token` files. Internal orchestration tools (Agent, TodoWrite, Skill) are mapped to `internal.orchestration` action type and governed by `org.allow_internal_tools`.
 
 ### Key Technical Decisions
 
@@ -82,13 +82,13 @@ The hook handler (`go/cmd/hookhandler/main.go`) is invoked by Claude Code's `Pre
 
 ## Overview
 
-AA_Firewall is a security and policy layer that sits between AI coding agents and the systems they touch, with the purpose of intercepting, inspecting, and governing agent actions in developer environments.[cite:1] The attached venture brief requires the product to monitor actions in real time, enforce permission policies, produce security-usable audit trails, and make broad enterprise rollout of coding agents safe enough to pass security review.[cite:1]
+Enforcer is a security and policy layer that sits between AI coding agents and the systems they touch, with the purpose of intercepting, inspecting, and governing agent actions in developer environments.[cite:1] The attached venture brief requires the product to monitor actions in real time, enforce permission policies, produce security-usable audit trails, and make broad enterprise rollout of coding agents safe enough to pass security review.[cite:1]
 
 This final TDD extends the earlier design into a more complete multi-agent Agentic AI architecture. It adds deeper protocol-aware coverage, stronger secure-container and remote-workspace support, richer session replay, stronger secrets and model-context protection, and more comprehensive anomaly detection across action sequences, while preserving the original product goal of mandatory governance over coding-agent activity.[cite:1]
 
 ## Document Goals
 
-- Specify an implementable architecture for AA_Firewall as a multi-agent Agentic AI application.[cite:1]
+- Specify an implementable architecture for Enforcer as a multi-agent Agentic AI application.[cite:1]
 - Define where interception and enforcement sit across runtime, filesystem, shell, network, MCP, secrets, database, and model-context surfaces.[cite:1]
 - Provide a practical policy model, audit schema, replay model, and anomaly-detection design for engineering implementation.[cite:1]
 - Explain how secure containers and remote workspaces are first-class deployment modes rather than afterthoughts.[cite:1]
@@ -96,9 +96,9 @@ This final TDD extends the earlier design into a more complete multi-agent Agent
 
 ## System Objectives
 
-AA_Firewall should provide mandatory governance, not passive observability, for AI coding agents acting across developer environments.[cite:1] It must preserve three core properties at all times: action mediation before execution where possible, policy-evaluable context across the entire action chain, and forensically useful auditability after the fact.[cite:1]
+Enforcer should provide mandatory governance, not passive observability, for AI coding agents acting across developer environments.[cite:1] It must preserve three core properties at all times: action mediation before execution where possible, policy-evaluable context across the entire action chain, and forensically useful auditability after the fact.[cite:1]
 
-The system should also model AI-assisted development as an inherently multi-agent environment. A single “coding agent” often delegates to tool agents, MCP servers, retrieval agents, CI agents, database tools, and remote model providers; therefore AA_Firewall must govern not only direct actions but delegated actions and inter-agent communication as well.[cite:1]
+The system should also model AI-assisted development as an inherently multi-agent environment. A single “coding agent” often delegates to tool agents, MCP servers, retrieval agents, CI agents, database tools, and remote model providers; therefore Enforcer must govern not only direct actions but delegated actions and inter-agent communication as well.[cite:1]
 
 ## Non-Goals
 
@@ -117,7 +117,7 @@ The system should also model AI-assisted development as an inherently multi-agen
 
 ## Multi-Agent Reference Architecture
 
-AA_Firewall should treat the protected environment as an agentic system composed of collaborating actors rather than a single monolith. The primary coding agent may call MCP tools, sub-agents, retrieval tools, database tools, external APIs, and remote models, and each of those interactions should be mediated and logged.[cite:1]
+Enforcer should treat the protected environment as an agentic system composed of collaborating actors rather than a single monolith. The primary coding agent may call MCP tools, sub-agents, retrieval tools, database tools, external APIs, and remote models, and each of those interactions should be mediated and logged.[cite:1]
 
 ```mermaid
 flowchart LR
@@ -130,7 +130,7 @@ flowchart LR
     Orchestrator --> Model[LLM Gateway]
     Orchestrator --> MCPClient[MCP Client]
 
-    MCPClient --> MCPGW[AA_Firewall MCP Gateway]
+    MCPClient --> MCPGW[Enforcer MCP Gateway]
     MCPGW --> MCPServer1[MCP Server: Files / Tools]
     MCPGW --> MCPServer2[MCP Server: DB / Cloud]
 
@@ -140,7 +140,7 @@ flowchart LR
     SubAgent2 --> Secrets[Secret Broker]
     SubAgent2 --> DBProxy[DB Proxy]
 
-    Orchestrator --> LocalDaemon[AA_Firewall Local Daemon]
+    Orchestrator --> LocalDaemon[Enforcer Local Daemon]
     SubAgent1 --> LocalDaemon
     SubAgent2 --> LocalDaemon
     SubAgent3 --> LocalDaemon
@@ -163,7 +163,7 @@ flowchart LR
     Anomaly --> Console
 ```
 
-This architecture models AA_Firewall as a multi-agent governance system as well as a security product. The protected application itself is agentic, and the firewall must therefore reason about agent identity, delegated tool use, and cross-agent action lineage rather than only about individual shell or file events.[cite:1]
+This architecture models Enforcer as a multi-agent governance system as well as a security product. The protected application itself is agentic, and the firewall must therefore reason about agent identity, delegated tool use, and cross-agent action lineage rather than only about individual shell or file events.[cite:1]
 
 ## Core Components
 
@@ -194,7 +194,7 @@ When a policy rule evaluates to `require_approval`, the daemon coordinates a non
 
 1. **Creation.** The daemon's approval service creates a pending approval record keyed by a unique `approval_id`. The evaluation response to the hook handler includes this `approval_id` along with a `require_approval` decision.
 
-2. **Immediate exit.** The hook handler (invoked by the Claude Code `PreToolUse` hook) exits immediately with code 2 and a user-facing message: `"[AA Firewall] APPROVAL REQUIRED: <rationale>. Policy: <rule_id>. Request ID: <approval_id>. An approval request has been sent to your security admin. Re-run this command after the admin approves it."` The developer is not frozen -- they can continue working on other tasks in Claude Code while the approval is pending.
+2. **Immediate exit.** The hook handler (invoked by the Claude Code `PreToolUse` hook) exits immediately with code 2 and a user-facing message: `"[Enforcer] APPROVAL REQUIRED: <rationale>. Policy: <rule_id>. Request ID: <approval_id>. An approval request has been sent to your security admin. Re-run this command after the admin approves it."` The developer is not frozen -- they can continue working on other tasks in Claude Code while the approval is pending.
 
 3. **Push to Hub.** The Sentinel client agent, running on a 3-second sync cadence (faster than the normal policy sync interval), collects all pending approvals from the local daemon via `GET /v1/approvals/pending` and pushes them to the Management Hub via `POST /api/v1/approvals/push` over the mTLS client channel. The Hub stores these approval requests in memory, keyed by `approval_id`.
 
@@ -305,13 +305,13 @@ This is the lowest-friction mode and is suited for pilots, developer laptops, an
 
 ### Secure-Container Deployment
 
-This is the higher-assurance mode for teams that can adopt controlled workspaces. It reduces blast radius by limiting workspace mounts, process scope, filesystem persistence, and egress behavior while keeping AA_Firewall policy and audit systems external to the container for consistency.[cite:1]
+This is the higher-assurance mode for teams that can adopt controlled workspaces. It reduces blast radius by limiting workspace mounts, process scope, filesystem persistence, and egress behavior while keeping Enforcer policy and audit systems external to the container for consistency.[cite:1]
 
 ```mermaid
 flowchart TB
     subgraph Host[Developer Machine / Managed Workspace]
         IDE[IDE / Agent UI]
-        Daemon[AA_Firewall Local Daemon]
+        Daemon[Enforcer Local Daemon]
         NProxy[Network Proxy]
         MCPGW[MCP Gateway]
         CtxGW[Context Protection Gateway]
@@ -354,7 +354,7 @@ flowchart LR
     Dev[Developer Browser / Thin Client] --> VDI[Remote IDE / Workspace UI]
     VDI --> Orch[Primary Coding Agent]
     Orch --> Workers[Sub-Agents]
-    Orch --> Daemon[Workspace AA_Firewall Daemon]
+    Orch --> Daemon[Workspace Enforcer Daemon]
     Workers --> Daemon
     Orch --> FS[Workspace FS Guard]
     Orch --> Exec[Workspace Exec Proxy]
@@ -381,7 +381,7 @@ This model should be preferred for regulated organizations, stronger containment
 
 ## Protocol-Aware Coverage Model
 
-AA_Firewall should represent all important interactions as protocol events, not only system calls. This expands coverage beyond traditional endpoint security and makes the product more resilient as agent ecosystems become more service-based.[cite:1]
+Enforcer should represent all important interactions as protocol events, not only system calls. This expands coverage beyond traditional endpoint security and makes the product more resilient as agent ecosystems become more service-based.[cite:1]
 
 ### Protocol classes to support
 
@@ -480,14 +480,14 @@ This design ensures that every decision and every effect is folded into the same
 
 The "Approval Required" branch in the sequence diagram above represents the most complex enforcement path. In the implemented system, the approval flow is non-blocking: the hook handler exits immediately, the developer continues working, and the developer retries the command after the admin approves. The flow involves four cooperating components across two trust boundaries (developer workstation and Management Hub). The following narrative traces a concrete example end-to-end.
 
-**Trigger.** A developer using Claude Code issues a destructive command such as `rm -rf node_modules`. Claude Code's `PreToolUse` hook fires, invoking the AA Firewall hook handler binary (`aafirewall-hook`). The hook handler sends `POST /v1/evaluate` to the local Sentinel daemon with the normalized action event.
+**Trigger.** A developer using Claude Code issues a destructive command such as `rm -rf node_modules`. Claude Code's `PreToolUse` hook fires, invoking the Enforcer hook handler binary (`enforcer-hook`). The hook handler sends `POST /v1/evaluate` to the local Sentinel daemon with the normalized action event.
 
 **Policy evaluation.** The daemon's policy engine matches the action against `org.approve_destructive_commands` and returns a `require_approval` decision. The daemon's approval service creates a pending approval record and returns the `approval_id` to the hook handler.
 
 **Immediate exit (non-blocking).** The hook handler does not block or poll. It exits immediately with code 2 and outputs a structured message to the developer:
 
 ```
-[AA Firewall] APPROVAL REQUIRED: Destructive command requires approval.
+[Enforcer] APPROVAL REQUIRED: Destructive command requires approval.
 Policy: org.approve_destructive_commands
 Request ID: apr_xxx
 An approval request has been sent to your security admin.
@@ -517,11 +517,11 @@ Claude Code hooks can be configured at two levels:
 - **Project-level (development):** `.claude/settings.json` in the project root. This is the standard configuration for development and is installed by `install-hooks.sh`. Developers can inspect and modify these hooks.
 - **Enterprise MDM (production):** `/Library/Application Support/ClaudeCode/managed-settings.json`. This is for enterprise deployment via MDM tools. The file is owned by root and includes `allowManagedHooksOnly=true`, which prevents the developer from removing or modifying hooks. Managed settings take precedence over project-level settings.
 
-Both configurations register `PreToolUse` and `PostToolUse` hooks that invoke the `aafirewall-hook` binary.
+Both configurations register `PreToolUse` and `PostToolUse` hooks that invoke the `enforcer-hook` binary.
 
 ### Hook Handler Logging
 
-The hook handler writes to both stderr (visible to Claude Code) and a persistent log file at `~/.aafirewall/hook.log`. This log file is developer-readable and does not require root access. Each log line includes a UTC timestamp. The log is useful for debugging hook invocations, verifying that the daemon is reachable, and reviewing policy decisions outside of the audit trail.
+The hook handler writes to both stderr (visible to Claude Code) and a persistent log file at `~/.enforcer/hook.log`. This log file is developer-readable and does not require root access. Each log line includes a UTC timestamp. The log is useful for debugging hook invocations, verifying that the daemon is reachable, and reviewing policy decisions outside of the audit trail.
 
 ### Hook Handler Workspace Detection
 
@@ -675,7 +675,7 @@ flowchart TD
 
 ## Audit and Storage Model
 
-AA_Firewall should use three logically separate but connected data stores:
+Enforcer should use three logically separate but connected data stores:
 
 - **Raw event log** for append-only ingestion.[cite:1]
 - **Operational query store** for fast UI and API access.[cite:1]
@@ -1029,4 +1029,4 @@ Deterministic policy should remain primary for hard enforcement.[cite:1] Anomaly
 
 ## What to Change With More Time
 
-With more time, the architecture should move toward deeper protocol-level mediation, broader remote-workspace standardization, more robust graph-native replay, stronger scoped-secret issuance, more precise context-sensitive redaction, and anomaly models tuned by customer environment and agent role.[cite:1] The main architectural direction should remain unchanged: AA_Firewall should be built as a multi-agent governance and security platform that joins policy, execution mediation, replay, and anomaly detection into one coherent enterprise control plane.[cite:1]
+With more time, the architecture should move toward deeper protocol-level mediation, broader remote-workspace standardization, more robust graph-native replay, stronger scoped-secret issuance, more precise context-sensitive redaction, and anomaly models tuned by customer environment and agent role.[cite:1] The main architectural direction should remain unchanged: Enforcer should be built as a multi-agent governance and security platform that joins policy, execution mediation, replay, and anomaly detection into one coherent enterprise control plane.[cite:1]

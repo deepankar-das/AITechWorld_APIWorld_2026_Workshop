@@ -1,10 +1,10 @@
 > Author: Deepankar Das
 
-# AA_Firewall Technical Design Document
+# Enforcer Technical Design Document
 
 ## Overview
 
-AA_Firewall is a security and policy layer that sits between an AI coding agent and the systems it touches, with the purpose of intercepting, inspecting, and governing agent actions in a developer environment.[cite:1] The implementation goal is to provide mandatory controls, structured auditability, and enough architectural coverage to make enterprise rollout of coding agents safe and governable.[cite:1]
+Enforcer is a security and policy layer that sits between an AI coding agent and the systems it touches, with the purpose of intercepting, inspecting, and governing agent actions in a developer environment.[cite:1] The implementation goal is to provide mandatory controls, structured auditability, and enough architectural coverage to make enterprise rollout of coding agents safe and governable.[cite:1]
 
 This TDD is intended to guide a development team building the MVP and near-term production architecture. It focuses on where the interception layer sits, how policies are evaluated, how approvals and audit logs work, how secure containers fit into the design, and what technical trade-offs should be made for an implementable first version.[cite:1]
 
@@ -24,7 +24,7 @@ This TDD is intended to guide a development team building the MVP and near-term 
 
 ## Architecture Decisions
 
-The core design decision is that AA_Firewall must be a hybrid enforcement system rather than a single control point. The attached requirements explicitly call out multiple possible locations for interception, including sandbox, proxy, runtime hook, and MCP wrapper, which implies that the product must combine context-rich interception with mandatory system-level enforcement.[cite:1]
+The core design decision is that Enforcer must be a hybrid enforcement system rather than a single control point. The attached requirements explicitly call out multiple possible locations for interception, including sandbox, proxy, runtime hook, and MCP wrapper, which implies that the product must combine context-rich interception with mandatory system-level enforcement.[cite:1]
 
 ### Recommended MVP enforcement points
 
@@ -38,7 +38,7 @@ The core design decision is that AA_Firewall must be a hybrid enforcement system
 
 ### Why hybrid
 
-A runtime hook alone sees intent but cannot guarantee enforcement if the agent bypasses the SDK or uses unmanaged tools.[cite:1] A container or proxy alone can constrain execution but may not understand agent-level context, approval semantics, or MCP-specific payloads.[cite:1] A hybrid design allows AA_Firewall to tie together agent intent, system effect, policy evaluation, and audit evidence in one control plane.[cite:1]
+A runtime hook alone sees intent but cannot guarantee enforcement if the agent bypasses the SDK or uses unmanaged tools.[cite:1] A container or proxy alone can constrain execution but may not understand agent-level context, approval semantics, or MCP-specific payloads.[cite:1] A hybrid design allows Enforcer to tie together agent intent, system effect, policy evaluation, and audit evidence in one control plane.[cite:1]
 
 ### MVP Implementation Target Matrix
 
@@ -67,7 +67,7 @@ flowchart LR
     Dev[Developer] --> IDE[IDE / Agent UI]
     IDE --> Agent[AI Coding Agent]
     Agent --> Hook[Runtime Hook / SDK Wrapper]
-    Hook --> Daemon[AA_Firewall Local Daemon]
+    Hook --> Daemon[Enforcer Local Daemon]
     Daemon --> Policy[Central Policy Engine]
     Daemon --> Audit[Audit Buffer / Event Stream]
 
@@ -164,7 +164,7 @@ The network proxy mediates outbound HTTP(S) and other supported egress requests 
 
 ### 6. MCP Gateway / Wrapper
 
-The MCP gateway is a key differentiator because it allows AA_Firewall to govern tool invocation at the protocol layer rather than only observing downstream OS effects.[cite:1]
+The MCP gateway is a key differentiator because it allows Enforcer to govern tool invocation at the protocol layer rather than only observing downstream OS effects.[cite:1]
 
 **Responsibilities**
 - Intercept MCP client-server requests and responses.[cite:1]
@@ -219,7 +219,7 @@ Secure containers are not the entire product, but they are an important deployme
 flowchart TB
     subgraph Host[Developer Machine / Remote Workspace]
         IDE[IDE / Local UI]
-        Daemon[AA_Firewall Local Daemon]
+        Daemon[Enforcer Local Daemon]
         Proxy[Network Proxy]
         MCPGW[MCP Gateway]
         subgraph Container[Ephemeral Secure Container]
@@ -257,7 +257,7 @@ flowchart TB
 
 ## Data Flow Design
 
-AA_Firewall should model every agent action as a normalized event flowing through the same decision pipeline regardless of source.
+Enforcer should model every agent action as a normalized event flowing through the same decision pipeline regardless of source.
 
 ```mermaid
 sequenceDiagram

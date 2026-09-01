@@ -1,12 +1,12 @@
 > Author: Deepankar Das
 
-# AA Firewall — Ubuntu Deployment + Kernel Enforcer (eBPF)
+# Enforcer — Ubuntu Deployment + Kernel Enforcer (eBPF)
 
-> How to deploy AA Firewall on Ubuntu, plus the implementation guide for the eBPF kernel enforcer.
+> How to deploy Enforcer on Ubuntu, plus the implementation guide for the eBPF kernel enforcer.
 
 ---
 
-## Part 1: Running AA Firewall on Ubuntu
+## Part 1: Running Enforcer on Ubuntu
 
 ### Ubuntu Compatibility
 
@@ -27,11 +27,11 @@ The macOS deploy scripts use LaunchDaemons (plist + launchctl). On Ubuntu these 
 
 | macOS | Ubuntu Equivalent |
 |---|---|
-| `/Library/LaunchDaemons/com.aafirewall.sentinel.plist` | `/etc/systemd/system/aafirewall-sentinel.service` |
-| `/Library/LaunchDaemons/com.aafirewall.sentinel-client.plist` | `/etc/systemd/system/aafirewall-sentinel-client.service` |
-| `launchctl load <plist>` | `systemctl enable --now aafirewall-sentinel` |
-| `launchctl unload <plist>` | `systemctl disable --now aafirewall-sentinel` |
-| `launchctl bootout system <plist>` | `systemctl stop aafirewall-sentinel` |
+| `/Library/LaunchDaemons/com.enforcer.sentinel.plist` | `/etc/systemd/system/enforcer-sentinel.service` |
+| `/Library/LaunchDaemons/com.enforcer.sentinel-client.plist` | `/etc/systemd/system/enforcer-sentinel-client.service` |
+| `launchctl load <plist>` | `systemctl enable --now enforcer-sentinel` |
+| `launchctl unload <plist>` | `systemctl disable --now enforcer-sentinel` |
+| `launchctl bootout system <plist>` | `systemctl stop enforcer-sentinel` |
 | `/Library/Application Support/ClaudeCode/managed-settings.json` | `/etc/claude-code/managed-settings.json` (or per-user `~/.claude/settings.json`) |
 | `chown root:wheel` | `chown root:root` (fallback already exists in scripts) |
 
@@ -49,7 +49,7 @@ sudo systemctl start postgresql
 sudo systemctl enable postgresql
 
 # 3. Clone and build
-git clone <repo-url> AAFirewall && cd AAFirewall
+git clone <repo-url> Enforcer && cd Enforcer
 ./scripts/prepare.sh
 ./scripts/build.sh
 
@@ -60,17 +60,17 @@ sudo ./scripts/setup-database.sh
 ./scripts/generate-certs.sh
 
 # 6. Start the Hub (background)
-export DATABASE_URL="$(sudo cat /etc/aafirewall/.db_credentials)"
-export CERT_DIR="/etc/aafirewall/certs"
-nohup ./go/bin/aafirewall-central > /var/log/aafirewall/hub.log 2>&1 &
+export DATABASE_URL="$(sudo cat /etc/enforcer/.db_credentials)"
+export CERT_DIR="/etc/enforcer/certs"
+nohup ./go/bin/enforcer-central > /var/log/enforcer/hub.log 2>&1 &
 
 # 7. Start the Sentinel daemon (background)
-nohup ./go/bin/aafirewall-daemon > /var/log/aafirewall/sentinel.log 2>&1 &
+nohup ./go/bin/enforcer-daemon > /var/log/enforcer/sentinel.log 2>&1 &
 
 # 8. Install hooks for Claude Code
 mkdir -p ~/.claude
 # Copy managed-settings.json or project-level .claude/settings.json
-# (see AA_Firewall_SETUP.md for hook JSON format)
+# (see Enforcer_SETUP.md for hook JSON format)
 
 # 9. Validate
 ./scripts/validate.sh --hub-token <your-admin-token>
@@ -81,17 +81,17 @@ mkdir -p ~/.claude
 Example service file for the Sentinel daemon:
 
 ```ini
-# /etc/systemd/system/aafirewall-sentinel.service
+# /etc/systemd/system/enforcer-sentinel.service
 [Unit]
-Description=AA Firewall Sentinel Daemon
+Description=Enforcer Sentinel Daemon
 After=network.target postgresql.service
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/aafirewall-daemon
+ExecStart=/usr/local/bin/enforcer-daemon
 Restart=always
 RestartSec=3
-Environment=DATABASE_URL=postgresql://aafirewall:PASSWORD@localhost:5432/aa_firewall?sslmode=prefer
+Environment=DATABASE_URL=postgresql://enforcer:PASSWORD@localhost:5432/enforcer?sslmode=prefer
 Environment=AA_STRICT_MODE=true
 
 [Install]
@@ -100,7 +100,7 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now aafirewall-sentinel
+sudo systemctl enable --now enforcer-sentinel
 ```
 
 ---
@@ -138,7 +138,7 @@ The kernel enforcer attaches eBPF programs to Linux Security Module (LSM) hooks.
 │  User Space                                         │
 │                                                     │
 │  ┌───────────────┐      ┌────────────────────────┐  │
-│  │ aafirewall-   │      │ EbpfEnforcer           │  │
+│  │ enforcer-   │      │ EbpfEnforcer           │  │
 │  │ daemon        │─────▶│ (Go, cilium/ebpf)      │  │
 │  │               │      │                        │  │
 │  │ Policy Engine │      │ - Loads BPF programs   │  │
@@ -221,8 +221,8 @@ go/internal/enforcement/osguard/
 Define the shared structures used by BPF programs and the Go loader:
 
 ```c
-#ifndef __AAFIREWALL_COMMON_H
-#define __AAFIREWALL_COMMON_H
+#ifndef __ENFORCER_COMMON_H
+#define __ENFORCER_COMMON_H
 
 #define MAX_PATH_LEN 256
 #define MAX_HOST_LEN 128
@@ -511,7 +511,7 @@ cd ../../..
 make build
 
 # 6. Run with kernel enforcement
-sudo AA_OSGUARD_MODE=enforce ./bin/aafirewall-daemon
+sudo AA_OSGUARD_MODE=enforce ./bin/enforcer-daemon
 
 # 7. Test: try accessing a denied path from another terminal
 cat ~/.ssh/id_rsa    # Should be denied by kernel enforcer

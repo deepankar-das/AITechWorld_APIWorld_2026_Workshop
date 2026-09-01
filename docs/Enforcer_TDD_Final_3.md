@@ -1,10 +1,10 @@
 > Author: Deepankar Das
 
-# AA_Firewall Technical Design Document Final 3
+# Enforcer Technical Design Document Final 3
 
 ## Executive Technical Summary (AIFund Two-Page Submission)
 
-AA_Firewall is designed as an enterprise-grade governance and security layer for AI coding agents. The technical thesis is that no single control point can reliably govern modern agent behavior across file operations, shell execution, network egress, package/dependency mutation, secret access, MCP tool invocation, model-context construction, and agent-to-agent delegation. A production architecture must therefore combine multiple enforcement and observability surfaces into one coherent control plane with deterministic policy outcomes and replayable evidence.[cite:1]
+Enforcer is designed as an enterprise-grade governance and security layer for AI coding agents. The technical thesis is that no single control point can reliably govern modern agent behavior across file operations, shell execution, network egress, package/dependency mutation, secret access, MCP tool invocation, model-context construction, and agent-to-agent delegation. A production architecture must therefore combine multiple enforcement and observability surfaces into one coherent control plane with deterministic policy outcomes and replayable evidence.[cite:1]
 
 The design goal is mandatory governance where promises are made. In practice this means that "monitor only" is insufficient for core risk paths. The system must intercept action intent before execution where feasible, evaluate policy with contextual attributes (actor, session, project, resource, action type, risk class, approval state), and return allow/deny/require-approval outcomes with human-readable rationale. This technical requirement drives the architecture toward a hybrid model: runtime hooks for high-fidelity intent capture, local/workspace daemon coordination for policy and state, protocol-aware gateways for external tools and network control, and centralized policy/audit services for cross-fleet governance.[cite:1]
 
@@ -26,7 +26,7 @@ Deployment strategy is also explicit. The architecture supports three topologies
 
 The technical migration path matters for adoption. Enterprises rarely start with maximum control on day one. By designing a consistent policy model and event contract across these topologies, teams can start with pilot instrumentation and move toward stronger containment without reworking policy semantics or audit pipelines. This reduces deployment risk and accelerates time-to-value.
 
-A central technical differentiator is protocol-aware governance. Traditional endpoint controls can observe process and network activity, but they do not natively understand agent tooling semantics, MCP method surfaces, or model-context leakage pathways. AA_Firewall’s TDD treats MCP and context submission as first-class governed channels, not secondary artifacts. That allows the system to enforce constraints such as trusted MCP server allowlists, method-level restrictions, argument inspection policies, and data redaction requirements before sensitive payloads reach models or external tools.[cite:1]
+A central technical differentiator is protocol-aware governance. Traditional endpoint controls can observe process and network activity, but they do not natively understand agent tooling semantics, MCP method surfaces, or model-context leakage pathways. Enforcer’s TDD treats MCP and context submission as first-class governed channels, not secondary artifacts. That allows the system to enforce constraints such as trusted MCP server allowlists, method-level restrictions, argument inspection policies, and data redaction requirements before sensitive payloads reach models or external tools.[cite:1]
 
 The approval model is engineered for developer flow and operational accountability. High-risk actions can be blocked pending approval, but the workflow avoids global workflow deadlock by issuing scoped approvals tied to actor, session, action class, and time constraints. Once approved, execution can proceed with explicit one-time or bounded-use semantics. Every decision transition is auditable, including approver identity, rationale, and expiry behavior. This is critical for compliance contexts where "who approved what and why" must be queryable and exportable.
 
@@ -41,25 +41,25 @@ Performance and reliability constraints are built into the architecture:
 - Idempotent service startup/deploy behavior, resilient event buffering, and eventual consistency for non-blocking analytics enrichment.[cite:1]
 - Tamper-resistance posture through managed hooks, privileged service modes, central policy authority, and integrity-focused audit handling.[cite:1]
 
-For AIFund evaluation, the technical narrative is that AA_Firewall is not a feature bundle but a systems architecture that closes a specific enterprise gap: governed execution for AI software agents. The implementation plan is tractable because each major capability maps to explicit components, contracts, and rollout phases. The differentiation is defensible because protocol-aware enforcement, scoped approval orchestration, and graph-native replay create compound value that is hard to replicate with point controls.
+For AIFund evaluation, the technical narrative is that Enforcer is not a feature bundle but a systems architecture that closes a specific enterprise gap: governed execution for AI software agents. The implementation plan is tractable because each major capability maps to explicit components, contracts, and rollout phases. The differentiation is defensible because protocol-aware enforcement, scoped approval orchestration, and graph-native replay create compound value that is hard to replicate with point controls.
 
-The near-term engineering objective is production hardening of the current architecture with strict API contracts, deployment automation, policy-pack governance, and operational SLO instrumentation. The medium-term objective is expansion of protocol coverage, stronger remote-workspace standardization, and deeper analytics-assisted policy optimization. The long-term objective is to establish AA_Firewall as the default control plane inserted between enterprise AI agents and execution environments.
+The near-term engineering objective is production hardening of the current architecture with strict API contracts, deployment automation, policy-pack governance, and operational SLO instrumentation. The medium-term objective is expansion of protocol coverage, stronger remote-workspace standardization, and deeper analytics-assisted policy optimization. The long-term objective is to establish Enforcer as the default control plane inserted between enterprise AI agents and execution environments.
 
 ## Purpose
 
-AA_Firewall is a security and policy layer that sits between AI coding agents and the systems they touch, with the goal of monitoring actions in real time, enforcing permission policies, and producing audit trails security teams can use to safely expand agent adoption across mid-market and enterprise development organizations.[cite:1] This document formalizes the architecture for implementing AA_Firewall as a multi-agent governance and security platform that joins policy, execution mediation, replay, and anomaly detection into one coherent enterprise control plane.[cite:1]
+Enforcer is a security and policy layer that sits between AI coding agents and the systems they touch, with the goal of monitoring actions in real time, enforcing permission policies, and producing audit trails security teams can use to safely expand agent adoption across mid-market and enterprise development organizations.[cite:1] This document formalizes the architecture for implementing Enforcer as a multi-agent governance and security platform that joins policy, execution mediation, replay, and anomaly detection into one coherent enterprise control plane.[cite:1]
 
 This version preserves the architectural direction of the earlier TDD and extends it into a more complete formal design. It adds deeper protocol-level mediation, broader remote-workspace standardization, more robust graph-native replay, stronger scoped-secret issuance, more precise context-sensitive redaction, and anomaly models tuned by customer environment and agent role, while maintaining the product thesis that mandatory governance over coding-agent actions is the core requirement.[cite:1]
 
 ## Scope
 
-This TDD is intended for an engineering team implementing the first production-oriented version of AA_Firewall and planning its evolution into an enterprise-grade platform.[cite:1] It covers system architecture, deployment models, component responsibilities, trust boundaries, policy model, protocol mediation, secrets and context protection, session replay, anomaly detection, data model, service contracts, performance trade-offs, rollout plan, and future hardening directions.[cite:1]
+This TDD is intended for an engineering team implementing the first production-oriented version of Enforcer and planning its evolution into an enterprise-grade platform.[cite:1] It covers system architecture, deployment models, component responsibilities, trust boundaries, policy model, protocol mediation, secrets and context protection, session replay, anomaly detection, data model, service contracts, performance trade-offs, rollout plan, and future hardening directions.[cite:1]
 
 ## Product Context
 
 The attached venture brief defines the problem clearly: AI coding agents are gaining access to developer machines and production-adjacent environments, but teams have no purpose-built policy layer, limited visibility, and weak auditability for autonomous actions.[cite:1] The brief also defines the expected technical deliverables: interception across multiple action surfaces, allow/deny/approval policy enforcement, structured audit logs, and architectural choices around sandboxing, proxies, runtime hooks, and MCP wrappers.[cite:1]
 
-The main design implication is that AA_Firewall cannot be implemented as a single plug-in or log collector. It must be a coordinated enforcement and governance system spanning local or remote execution environments, protocol-aware gateways, approval workflows, and post-execution analytics.[cite:1]
+The main design implication is that Enforcer cannot be implemented as a single plug-in or log collector. It must be a coordinated enforcement and governance system spanning local or remote execution environments, protocol-aware gateways, approval workflows, and post-execution analytics.[cite:1]
 
 ## System Goals
 
@@ -87,7 +87,7 @@ The main design implication is that AA_Firewall cannot be implemented as a singl
 
 ## Reference Architecture
 
-AA_Firewall should be modeled as a multi-agent Agentic AI application where a primary coding agent orchestrates sub-agents and tool interactions, while AA_Firewall provides a parallel governance fabric that mediates, records, and analyzes those interactions.[cite:1]
+Enforcer should be modeled as a multi-agent Agentic AI application where a primary coding agent orchestrates sub-agents and tool interactions, while Enforcer provides a parallel governance fabric that mediates, records, and analyzes those interactions.[cite:1]
 
 ```mermaid
 flowchart LR
@@ -101,7 +101,7 @@ flowchart LR
     Orch --> ModelGW[LLM Gateway]
     Orch --> MCPClient[MCP Client]
 
-    MCPClient --> MCPGW[AA_Firewall MCP Gateway]
+    MCPClient --> MCPGW[Enforcer MCP Gateway]
     MCPGW --> MCPFiles[MCP Server: Files / Tools]
     MCPGW --> MCPData[MCP Server: DB / Cloud]
     MCPGW --> MCPOps[MCP Server: CI / Infra]
@@ -114,7 +114,7 @@ flowchart LR
     Retriever --> ContextGW[Context / Token Protection Gateway]
     Reviewer --> ContextGW
 
-    Orch --> LocalDaemon[AA_Firewall Local or Workspace Daemon]
+    Orch --> LocalDaemon[Enforcer Local or Workspace Daemon]
     Planner --> LocalDaemon
     Executor --> LocalDaemon
     Retriever --> LocalDaemon
@@ -138,7 +138,7 @@ flowchart LR
     Anomaly --> Console
 ```
 
-This architecture keeps the main architectural direction unchanged: AA_Firewall is a multi-agent governance and security platform joining policy, execution mediation, replay, and anomaly detection into one enterprise control plane.[cite:1]
+This architecture keeps the main architectural direction unchanged: Enforcer is a multi-agent governance and security platform joining policy, execution mediation, replay, and anomaly detection into one enterprise control plane.[cite:1]
 
 ## Logical Layers
 
@@ -164,7 +164,7 @@ This layer includes event ingestion, graph-native replay, anomaly detection, pol
 
 ## Deployment Topologies
 
-AA_Firewall should support three standard deployment topologies with a common logical model and differing enforcement strengths.[cite:1]
+Enforcer should support three standard deployment topologies with a common logical model and differing enforcement strengths.[cite:1]
 
 ### Topology A: Host-Based Pilot Deployment
 
@@ -178,7 +178,7 @@ Use for controlled developer environments where the project workspace, process e
 flowchart TB
     subgraph Host[Managed Developer Machine]
         IDE[IDE / UI]
-        Daemon[AA_Firewall Daemon]
+        Daemon[Enforcer Daemon]
         NetProxy[Network Proxy]
         MCPGW[MCP Gateway]
         CtxGW[Context Protection Gateway]
@@ -219,7 +219,7 @@ flowchart LR
     Dev[Developer Browser / Thin Client] --> WorkspaceUI[Remote IDE / Workspace UI]
     WorkspaceUI --> Orch[Primary Agent]
     Orch --> Agents[Sub-Agents]
-    Orch --> Daemon[Workspace AA_Firewall Daemon]
+    Orch --> Daemon[Workspace Enforcer Daemon]
     Agents --> Daemon
     Orch --> FS[Workspace FS Guard]
     Orch --> Exec[Workspace Exec Proxy]
@@ -246,7 +246,7 @@ flowchart LR
 
 ### Remote-Workspace Standardization Requirements
 
-To make remote-workspace support operationally consistent, AA_Firewall should standardize:
+To make remote-workspace support operationally consistent, Enforcer should standardize:
 
 - Workspace bootstrap and agent-sidecar injection model.[cite:1]
 - Default proxy routing for network, MCP, model, and secret retrieval paths.[cite:1]
@@ -350,7 +350,7 @@ The database proxy governs structured-data access.
 
 ### 8. Secret Broker
 
-The secret broker should move AA_Firewall from ambient secrets toward scoped-secret issuance.
+The secret broker should move Enforcer from ambient secrets toward scoped-secret issuance.
 
 **MVP capabilities**
 - Secret retrieval mediation by session and environment.[cite:1]
@@ -439,7 +439,7 @@ The anomaly engine should use multiple model families and tune baselines by cust
 
 ## Data Model
 
-AA_Firewall should use a common canonical envelope for actions, decisions, effects, and anomalies so every component can interoperate predictably.[cite:1]
+Enforcer should use a common canonical envelope for actions, decisions, effects, and anomalies so every component can interoperate predictably.[cite:1]
 
 ### Canonical action envelope
 
@@ -823,4 +823,4 @@ Deterministic policy remains the primary basis for enforcement.[cite:1] Learned 
 
 ## Future Improvements
 
-With more time, AA_Firewall should deepen protocol mediation, increase remote-workspace standardization, strengthen graph-native replay and export, expand scoped-secret issuance, refine context-sensitive redaction, and improve anomaly models tuned by environment tier and agent role.[cite:1] These are extensions of the current architecture rather than changes to direction: the platform should continue to evolve as a multi-agent governance and security control plane that unifies policy, execution mediation, replay, and anomaly detection for enterprise AI coding-agent adoption.[cite:1]
+With more time, Enforcer should deepen protocol mediation, increase remote-workspace standardization, strengthen graph-native replay and export, expand scoped-secret issuance, refine context-sensitive redaction, and improve anomaly models tuned by environment tier and agent role.[cite:1] These are extensions of the current architecture rather than changes to direction: the platform should continue to evolve as a multi-agent governance and security control plane that unifies policy, execution mediation, replay, and anomaly detection for enterprise AI coding-agent adoption.[cite:1]

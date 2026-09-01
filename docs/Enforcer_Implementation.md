@@ -3,19 +3,19 @@
 **Created:** April 27, 2026
 **Last Updated:** April 28, 2026
 **Template:** [CLAUDE_TEMPLATE.md](../CLAUDE_TEMPLATE.md) — Template A (Feature / Code)
-**PRD:** [AA_Firewall_PRD.md](AA_Firewall_PRD.md) — Appendix C (Ratified Requirements)
-**TDD:** [AA_Firewall_TDD.md](AA_Firewall_TDD.md) — Architecture, schemas, APIs
+**PRD:** [Enforcer_PRD.md](Enforcer_PRD.md) — Appendix C (Ratified Requirements)
+**TDD:** [Enforcer_TDD.md](Enforcer_TDD.md) — Architecture, schemas, APIs
 **Status:** Phase 0 + 1 Complete (55 of 64 features done)
 
 ---
 
-# AA Firewall — Implementation Plan
+# Enforcer — Implementation Plan
 
 > **Phase 0 through Phase 1D.** Implements the ratified Appendix C requirements (R-1 through R-5) and user stories (US-1 through US-5) for the working prototype.
 
 **References:**
-- [AA_Firewall_PRD.md](AA_Firewall_PRD.md) — Appendix C: Final Consolidated Requirements
-- [AA_Firewall_TDD.md](AA_Firewall_TDD.md) — Architecture, component design, API contracts, audit schema
+- [Enforcer_PRD.md](Enforcer_PRD.md) — Appendix C: Final Consolidated Requirements
+- [Enforcer_TDD.md](Enforcer_TDD.md) — Architecture, component design, API contracts, audit schema
 - [CLAUDE.md](../CLAUDE.md) — Quality gates, reviewer checklist, banned patterns
 
 ---
@@ -46,14 +46,14 @@ The prototype must demonstrate mandatory enforcement of AI coding agent actions 
 
 | Component | File(s) | Status |
 |---|---|---|
-| PRD with ratified requirements | `docs/AA_Firewall_PRD.md` (Appendix C) | Done |
-| TDD with architecture and schemas | `docs/AA_Firewall_TDD.md` | Done |
-| Peer-reviewed PRD | `docs/AA_Firewall_PRD_Peer.md` | Done |
-| Peer-reviewed TDD | `docs/AA_Firewall_TDD_Peer.md` | Done |
+| PRD with ratified requirements | `docs/Enforcer_PRD.md` (Appendix C) | Done |
+| TDD with architecture and schemas | `docs/Enforcer_TDD.md` | Done |
+| Peer-reviewed PRD | `docs/Enforcer_PRD_Peer.md` | Done |
+| Peer-reviewed TDD | `docs/Enforcer_TDD_Peer.md` | Done |
 | CLAUDE.md project instructions | `CLAUDE.md` | Done |
 | AGENTS.md project instructions | `AGENTS.md` | Done |
-| Venture prompt | `docs/AA_Firewall_Prompt.md` | Done |
-| Market study | `docs/aa_firewall_market_study_mrd.md` | Done |
+| Venture prompt | `docs/Enforcer_Prompt.md` | Done |
+| Market study | `docs/enforcer_market_study_mrd.md` | Done |
 
 ### What Has Been Built (Phase 0 through 1, plus Phase 2/3 pull-forward)
 
@@ -104,14 +104,14 @@ VS Code extension (approval prompt UI, status bar integration), Cursor/Codex age
 
 | File | What It Contains | Status |
 |---|---|---|
-| `docs/AA_Firewall_PRD.md` Section 27 (Appendix C) | Ratified requirements R-1 through R-5, design principles P-1 through P-10, phased roadmap, user stories US-1 through US-5, integration targets, success metrics | Done |
-| `docs/AA_Firewall_TDD.md` Section 5 | Technology stack: TypeScript + Node.js, SQLite, PostgreSQL, Docker, YAML policy bundles | Done |
-| `docs/AA_Firewall_TDD.md` Section 7.2 | `/v1/evaluate` API contract with full request/response JSON | Done |
-| `docs/AA_Firewall_TDD.md` Section 8 | Policy model: hierarchy, YAML schema, evaluation order, 7 default rules | Done |
-| `docs/AA_Firewall_TDD.md` Section 9 | Audit event schema (15+ fields), minimum schema validation gate, storage tiers | Done |
-| `docs/AA_Firewall_TDD.md` Section 10 | Approval service design: lifecycle, features, API, performance targets | Done |
-| `docs/AA_Firewall_TDD.md` Section 18 | Project structure (40+ files) | Done |
-| `docs/AA_Firewall_TDD.md` Appendix B.4 | TypeScript message contracts: ActionRequest, PolicyDecision, ApprovalRequest, ApprovalDecision, AuditEvent | Done |
+| `docs/Enforcer_PRD.md` Section 27 (Appendix C) | Ratified requirements R-1 through R-5, design principles P-1 through P-10, phased roadmap, user stories US-1 through US-5, integration targets, success metrics | Done |
+| `docs/Enforcer_TDD.md` Section 5 | Technology stack: TypeScript + Node.js, SQLite, PostgreSQL, Docker, YAML policy bundles | Done |
+| `docs/Enforcer_TDD.md` Section 7.2 | `/v1/evaluate` API contract with full request/response JSON | Done |
+| `docs/Enforcer_TDD.md` Section 8 | Policy model: hierarchy, YAML schema, evaluation order, 7 default rules | Done |
+| `docs/Enforcer_TDD.md` Section 9 | Audit event schema (15+ fields), minimum schema validation gate, storage tiers | Done |
+| `docs/Enforcer_TDD.md` Section 10 | Approval service design: lifecycle, features, API, performance targets | Done |
+| `docs/Enforcer_TDD.md` Section 18 | Project structure (40+ files) | Done |
+| `docs/Enforcer_TDD.md` Appendix B.4 | TypeScript message contracts: ActionRequest, PolicyDecision, ApprovalRequest, ApprovalDecision, AuditEvent | Done |
 
 ### Database Tables (Planned for Phase 0/C)
 
@@ -247,7 +247,7 @@ flowchart TB
         end
 
         subgraph Privileged["Privileged Layer (root / LaunchDaemon)"]
-            DaemonProc["AA Firewall Daemon<br/>(port 9100, RBAC auth)"]
+            DaemonProc["Enforcer Daemon<br/>(port 9100, RBAC auth)"]
             PolicyEng["Policy Engine<br/>(signed YAML bundles)"]
             ApprovalSvc["Approval Service"]
             AuditBuf["Audit Buffer"]
@@ -256,7 +256,7 @@ flowchart TB
         end
 
         subgraph AppEnforcement["Application Enforcement (IDE hooks)"]
-            HookHandler["Hook Handler<br/>(aafirewall-hook)"]
+            HookHandler["Hook Handler<br/>(enforcer-hook)"]
             FSGuard["Filesystem Guard"]
             ShellProxy["Shell Proxy"]
             NetProxy["Network Proxy<br/>(port 9101)"]
@@ -308,7 +308,7 @@ flowchart TB
     subgraph Host["Developer Machine"]
         IDE["VS Code"]
         subgraph Privileged["Privileged (root)"]
-            Daemon["AA Firewall Daemon<br/>(port 9100, RBAC)"]
+            Daemon["Enforcer Daemon<br/>(port 9100, RBAC)"]
             SentinelAgent["Sentinel Agent"]
             ManagedHooks["Managed Hooks"]
         end
@@ -603,7 +603,7 @@ Real interception on three surfaces with Claude Code.
 | A12 | Sensitive path read tests | `tests/policy-engine.test.ts` | Policy engine tests verify sensitive path matching (path_patterns for ~/.ssh/*, ~/.aws/*, ~/.config/gcloud/*). Command classifier tests cover credential-related patterns. | High | A2, A1 | **Done** | vitest | Claude |
 | A13 | Command classifier tests | `tests/enforcement/command-classifier.test.ts` | 27 tests: destructive (7), network_tool (4), package_manager (5), safe (6), compound (3), helper (2). All passing. | High | A4 | **Done** | vitest (27 tests) | Claude |
 
-**Exit criteria:** Claude Code (VS Code extension) attempts file writes, shell commands, and network calls. AA Firewall intercepts all three, evaluates policy, blocks violations with human-readable rationale, and logs events with `attempted_action` and `observed_effect`. Bypass detector flags ungoverned actions. All enforcement tests pass.
+**Exit criteria:** Claude Code (VS Code extension) attempts file writes, shell commands, and network calls. Enforcer intercepts all three, evaluates policy, blocks violations with human-readable rationale, and logs events with `attempted_action` and `observed_effect`. Bypass detector flags ungoverned actions. All enforcement tests pass.
 
 ---
 
@@ -624,7 +624,7 @@ Full human-in-the-loop approval workflow with in-IDE delivery.
 | B9 | Approval integration tests | `tests/approval-service.test.ts` | 20 tests: create/resolve/timeout lifecycle, auto-deny on timeout (2s test), auto-allow on timeout (1s test), reusable scopes, break-glass, pending list, metrics. All passing. | High | B1-B8 | **Done** | vitest (20 tests) | Claude |
 | B10 | Approval performance test | `tests/performance/approval-latency.test.ts` | Deferred — approval timeout tests cover functional correctness. Performance benchmarks deferred to production pilot. | Medium | B7, B8 | Deferred | vitest | Claude |
 
-**Exit criteria:** Claude Code attempts a destructive shell command. AA Firewall surfaces an approval prompt in VS Code with context bundle (action, resource, risk rationale, policy rule, agent identity, session summary). Reviewer approves or denies. Decision is enforced within 1 second. Full audit trail recorded including approver identity, rationale, and scope. Timeout behavior works correctly. Reusable scopes reduce approval fatigue. Break-glass access logged with elevated severity.
+**Exit criteria:** Claude Code attempts a destructive shell command. Enforcer surfaces an approval prompt in VS Code with context bundle (action, resource, risk rationale, policy rule, agent identity, session summary). Reviewer approves or denies. Decision is enforced within 1 second. Full audit trail recorded including approver identity, rationale, and scope. Timeout behavior works correctly. Reusable scopes reduce approval fatigue. Break-glass access logged with elevated severity.
 
 ---
 
@@ -704,8 +704,8 @@ Formal verification plan execution and readiness gate measurement per TDD Append
 
 ## 10. Venture Prompt Requirements Traceability
 
-> Cross-referenced in TDD [Section 3A](AA_Firewall_TDD.md#venture-prompt-requirements-traceability).
-> Source: [AA_Firewall_Prompt.md](AA_Firewall_Prompt.md)
+> Cross-referenced in TDD [Section 3A](Enforcer_TDD.md#venture-prompt-requirements-traceability).
+> Source: [Enforcer_Prompt.md](Enforcer_Prompt.md)
 
 ### Req 1: Intercept agent actions (at least two of six)
 
@@ -774,7 +774,7 @@ Formal verification plan execution and readiness gate measurement per TDD Append
 ## 10A. Feature-Phase Matrix (Authoritative)
 
 > **This is the single authoritative reference for what ships in which phase.**
-> The TDD ([AA_Firewall_TDD.md Section 3A](AA_Firewall_TDD.md#3a-feature-phase-summary)) contains a summary version that cross-references this table.
+> The TDD ([Enforcer_TDD.md Section 3A](Enforcer_TDD.md#3a-feature-phase-summary)) contains a summary version that cross-references this table.
 > When updating feature status, update THIS table first — the TDD summary follows.
 
 ### Phase 0: Foundations (10 features — all Done)
@@ -824,7 +824,7 @@ Formal verification plan execution and readiness gate measurement per TDD Append
 | F36 | Container posture validator | Detects dangerous container configs; refuses to start on critical violations | None | `src/enforcement/container-posture.ts` | **Done** |
 | F37 | Hardened Docker container | Read-only root FS, non-root user, all caps dropped, no docker.sock | F36 | `docker/Dockerfile.agent` | **Done** |
 | F38 | PostgreSQL setup | Docker Compose with audit_events table, indexes, append-only | None | `docker/docker-compose.yaml`, `docker/init.sql` | **Done** |
-| F39 | Hook installer script | Adds/removes AA Firewall hooks in ~/.claude/settings.json | F18 | `scripts/install-hooks.sh` | **Done** |
+| F39 | Hook installer script | Adds/removes Enforcer hooks in ~/.claude/settings.json | F18 | `scripts/install-hooks.sh` | **Done** |
 | F40 | Demo scenario script | 9 scenarios against live daemon (all venture prompt requirements) | F09, F11 | `scripts/demo.sh` | **Done** |
 | F41 | Readiness gate report | Queries /v1/metrics, formats gate pass/fail | F34 | `scripts/readiness-report.sh` | **Done** |
 | F42 | Package install guard | Detect npm/pip/brew/yarn/cargo installs; extract package name + registry | F15 | `src/enforcement/package-guard.ts` | **Done** |
@@ -961,17 +961,17 @@ The entire core system has been ported from TypeScript to Go for maximum securit
 | Component | Go Package | Tests | Binary |
 |---|---|---|---|
 | Types + validation | `internal/types/` | Validated by all tests | — |
-| Policy engine | `internal/policy/` | 12+ | `aafirewall-daemon` |
-| Audit pipeline | `internal/audit/` | 19+ | `aafirewall-daemon` |
-| Enforcement layer | `internal/enforcement/` | 113+ | `aafirewall-daemon` / `aafirewall-hook` |
-| Approval service | `internal/approval/` | 20+ | `aafirewall-daemon` |
-| Anomaly detection | `internal/intelligence/` | 7+ | `aafirewall-daemon` |
-| MCP gateway | `internal/enforcement/mcpgateway.go` | 7+ | `aafirewall-daemon` |
-| Daemon server + routes | `internal/daemon/` | via integration | `aafirewall-daemon` (~9 MB) |
-| Hook handler | `cmd/hookhandler/` | — | `aafirewall-hook` (~8.4 MB) |
-| Management Hub | `internal/central/` + `cmd/central/` | — | `aafirewall-central` (~8.7 MB) |
-| Sentinel agent | `internal/client/` + `cmd/client/` | — | `aafirewall-client` (~8.5 MB) |
-| Console embedding | `internal/console/embed.go` | — | Embedded in `aafirewall-daemon` |
+| Policy engine | `internal/policy/` | 12+ | `enforcer-daemon` |
+| Audit pipeline | `internal/audit/` | 19+ | `enforcer-daemon` |
+| Enforcement layer | `internal/enforcement/` | 113+ | `enforcer-daemon` / `enforcer-hook` |
+| Approval service | `internal/approval/` | 20+ | `enforcer-daemon` |
+| Anomaly detection | `internal/intelligence/` | 7+ | `enforcer-daemon` |
+| MCP gateway | `internal/enforcement/mcpgateway.go` | 7+ | `enforcer-daemon` |
+| Daemon server + routes | `internal/daemon/` | via integration | `enforcer-daemon` (~9 MB) |
+| Hook handler | `cmd/hookhandler/` | — | `enforcer-hook` (~8.4 MB) |
+| Management Hub | `internal/central/` + `cmd/central/` | — | `enforcer-central` (~8.7 MB) |
+| Sentinel agent | `internal/client/` + `cmd/client/` | — | `enforcer-client` (~8.5 MB) |
+| Console embedding | `internal/console/embed.go` | — | Embedded in `enforcer-daemon` |
 | **Total** | **~45 Go files** | **197 tests** | **4 static binaries** |
 
 **Security improvements from Go port:**
@@ -1040,7 +1040,7 @@ See TDD Section 13F for full design: analytics architecture diagram, API contrac
 | S-P0-04 | Align console API contracts with Go daemon responses | Console reads wrong fields and silently breaks workflows | `console/src/lib/api.ts`, `go/internal/daemon/routes/approvals.go`, all 7 console pages | Claude | 1 day | **Done** | Go returns `"approvals"` key; api.ts rewritten with auth; all pages use `useAuth()` + api.ts |
 | S-P0-05 | Send admin token on all admin-required console calls | Admin actions fail or fall back unexpectedly | `console/src/lib/api.ts`, `console/src/lib/auth-context.tsx`, all 7 console pages | Claude | 1 day | **Done** | all authenticated endpoints pass `X-Admin-Token` via `buildHeaders()`; zero direct fetch() calls remain |
 | S-P0-06 | Repair failing redaction unit test | Security regression in secret-handling path | `tests/enforcement/redaction.test.ts` | Claude | 0.5 day | **Done** | 145/145 Vitest pass including all 22 redaction tests; not reproducible at current commit |
-| S-P0-07 | Re-baseline docs to current code/test reality | Mismatch between claimed and actual security posture | `docs/AA_Firewall_TDD.md`, `docs/AA_Firewall_Implementation.md`, `CLAUDE.md` | Claude | 1 day | **Done** | TDD/Implementation/CLAUDE.md updated: 3 Go deps (uuid, pgx, yaml), 197 Go + 145 TS tests, PostgreSQL-only persistence |
+| S-P0-07 | Re-baseline docs to current code/test reality | Mismatch between claimed and actual security posture | `docs/Enforcer_TDD.md`, `docs/Enforcer_Implementation.md`, `CLAUDE.md` | Claude | 1 day | **Done** | TDD/Implementation/CLAUDE.md updated: 3 Go deps (uuid, pgx, yaml), 197 Go + 145 TS tests, PostgreSQL-only persistence |
 
 ### 12.2 P1 — Hardening and Trust Boundaries (3-6 weeks)
 
@@ -1123,8 +1123,8 @@ Design note: when RBAC (S-P1-02) is implemented, this should require reviewer-le
 - Ran `npx vitest run` at current commit: 145/145 pass including all 22 redaction tests in `tests/enforcement/redaction.test.ts`. The 1 failure Codex observed was likely against an older commit or a transient environment issue.
 
 **S-P0-07 (Doc re-baseline) — Already Done.**
-- `docs/AA_Firewall_TDD.md` Section 5: rewrote technology stack for Go (3 deps: uuid, pgx, yaml), PostgreSQL-only persistence, no SQLite.
-- `docs/AA_Firewall_Implementation.md` Section 11: updated test counts (197 Go + 145 TS = 342), added Go Port subsection, corrected dependency claims.
+- `docs/Enforcer_TDD.md` Section 5: rewrote technology stack for Go (3 deps: uuid, pgx, yaml), PostgreSQL-only persistence, no SQLite.
+- `docs/Enforcer_Implementation.md` Section 11: updated test counts (197 Go + 145 TS = 342), added Go Port subsection, corrected dependency claims.
 - `CLAUDE.md`: updated from “Pre-Implementation (Planning Phase)” to “Phase 1 Complete + Go Port Complete” with accurate feature/test/binary counts.
 
 ### P1 Items — Hardening and Trust Boundaries

@@ -1,12 +1,12 @@
 > Author: Deepankar Das
 
-# AA_Firewall PRD Final
+# Enforcer PRD Final
 
 ## Executive Summary: Product and Implementation Overview
 
 ### Product Vision
 
-AA Firewall is a mandatory governance and security control plane purpose-built for AI coding agents operating in developer environments. It sits between AI agents (Claude Code, Cursor, Copilot agents, MCP-driven workflows) and the systems those agents can affect -- intercepting every sensitive action, evaluating it against organizational policy, and enforcing a deterministic outcome (allow, deny, or require approval) before the action executes. The product is designed for security engineering leads and platform engineering leads at mid-market and enterprise software organizations who need to move AI coding agent adoption from constrained pilots to governed production use. AA Firewall is the trust boundary that converts agent productivity from an unmanaged experiment into an approvable operating model.
+Enforcer is a mandatory governance and security control plane purpose-built for AI coding agents operating in developer environments. It sits between AI agents (Claude Code, Cursor, Copilot agents, MCP-driven workflows) and the systems those agents can affect -- intercepting every sensitive action, evaluating it against organizational policy, and enforcing a deterministic outcome (allow, deny, or require approval) before the action executes. The product is designed for security engineering leads and platform engineering leads at mid-market and enterprise software organizations who need to move AI coding agent adoption from constrained pilots to governed production use. Enforcer is the trust boundary that converts agent productivity from an unmanaged experiment into an approvable operating model.
 
 ### Market Context
 
@@ -14,15 +14,15 @@ AI coding agents have shifted from passive code completion to autonomous task ex
 
 ### Architecture Summary
 
-AA Firewall uses a Hub + Sentinel architecture with 5 defense layers:
+Enforcer uses a Hub + Sentinel architecture with 5 defense layers:
 
-- **Layer 1 -- Runtime Hook / SDK Wrapper.** Intent-aware interception before action execution. The hook handler binary (`aafirewall-hook`) reads JSON from stdin, evaluates policy via the local daemon, and returns allow/deny/approval decisions via exit codes (0 = allow, 2 = deny). Tool mappings cover 8 system-affecting tools (Read, Edit, Write, Bash, WebFetch, WebSearch, Glob, Grep) and 17 internal orchestration tools.
+- **Layer 1 -- Runtime Hook / SDK Wrapper.** Intent-aware interception before action execution. The hook handler binary (`enforcer-hook`) reads JSON from stdin, evaluates policy via the local daemon, and returns allow/deny/approval decisions via exit codes (0 = allow, 2 = deny). Tool mappings cover 8 system-affecting tools (Read, Edit, Write, Bash, WebFetch, WebSearch, Glob, Grep) and 17 internal orchestration tools.
 - **Layer 2 -- Managed Hooks.** Hooks are installed by the Sentinel agent running as root (via sudo or MDM) into Claude Code's settings, ensuring developers cannot remove or bypass enforcement.
-- **Layer 3 -- Privileged Daemon.** The local daemon (`aafirewall-daemon`) runs on localhost:9100, performs policy lookup, decision caching, audit buffering, RBAC, and serves the Sentinel Console. It persists all audit events to PostgreSQL (append-only, no UPDATE or DELETE).
+- **Layer 3 -- Privileged Daemon.** The local daemon (`enforcer-daemon`) runs on localhost:9100, performs policy lookup, decision caching, audit buffering, RBAC, and serves the Sentinel Console. It persists all audit events to PostgreSQL (append-only, no UPDATE or DELETE).
 - **Layer 4 -- OS Kernel Enforcer (planned).** eBPF (Linux) / ESF (macOS) intercepts at the syscall level for file.open, execve, and connect -- catching raw terminal bypass outside the agent runtime.
-- **Layer 5 -- Management Hub.** The central server (`aafirewall-central`) uses mTLS on ports 9200 (client) and 9201 (admin) for policy distribution, audit aggregation, signed bundles, Sentinel heartbeat monitoring, and the Hub Console for security admins. All Hub state (policies, clients, enforcement toggles) is persisted in PostgreSQL.
+- **Layer 5 -- Management Hub.** The central server (`enforcer-central`) uses mTLS on ports 9200 (client) and 9201 (admin) for policy distribution, audit aggregation, signed bundles, Sentinel heartbeat monitoring, and the Hub Console for security admins. All Hub state (policies, clients, enforcement toggles) is persisted in PostgreSQL.
 
-The Sentinel agent (`aafirewall-client`) handles registration with the Hub, policy sync with hash-based change detection, heartbeat reporting, and audit event forwarding -- all over mTLS.
+The Sentinel agent (`enforcer-client`) handles registration with the Hub, policy sync with hash-based change detection, heartbeat reporting, and audit event forwarding -- all over mTLS.
 
 ### Key Capabilities
 
@@ -44,21 +44,21 @@ The Go port is complete and produces 5 statically compiled binaries with zero ru
 
 | Binary | Role |
 |--------|------|
-| `aafirewall-daemon` | Local enforcement daemon (localhost:9100) |
-| `aafirewall-hook` | Hook handler for Claude Code PreToolUse/PostToolUse |
-| `aafirewall-central` | Management Hub with mTLS (ports 9200/9201) |
-| `aafirewall-client` | Sentinel agent (registration, policy sync, heartbeat, audit forwarding) |
-| `aafirewall-authseed` | Authentication seed utility |
+| `enforcer-daemon` | Local enforcement daemon (localhost:9100) |
+| `enforcer-hook` | Hook handler for Claude Code PreToolUse/PostToolUse |
+| `enforcer-central` | Management Hub with mTLS (ports 9200/9201) |
+| `enforcer-client` | Sentinel agent (registration, policy sync, heartbeat, audit forwarding) |
+| `enforcer-authseed` | Authentication seed utility |
 
 The codebase comprises 83 Go source files with 283 test functions across 18,000+ lines of Go. The console is built with Next.js 15 (App Router), React, shadcn/ui, and Tailwind CSS across 36 TypeScript source files, compiled to static HTML/JS/CSS and embedded in the Go daemon via `go:embed`. Console pages include: dashboard, sessions list, session detail, approvals, policies, analytics, developer detail, search, export, and login. Policy enforcement ships with 8 built-in policy packs containing 15 rules across 6 categories (source code protection, supply chain security, secrets hardening, infrastructure safety, network egress control, compliance/audit, developer best practices, and MCP governance). The project includes 20 shell scripts for build, deploy, test, demo, certificate generation, database setup, service installation, and release integrity verification.
 
 ### Deployment Model
 
-The Hub (`aafirewall-central`) runs on the security team's server with PostgreSQL for state persistence and audit aggregation. It exposes two mTLS ports: 9200 for Sentinel client communication and 9201 for admin access and the Hub Console. The Sentinel (`aafirewall-client`) runs on each developer machine, managed via sudo or MDM, and handles local enforcement through the daemon and hook handler. The Sentinel registers with the Hub, syncs policies (with hash-based change detection to minimize bandwidth), forwards audit events, and sends heartbeats. The Hub tracks Sentinel status (online, stale, offline) and can push policy updates and enforcement state changes to all connected Sentinels. Certificates for mTLS are generated via the `generate-certs.sh` script. Deployment scripts support single-machine (Hub + Sentinel collocated), separate Hub deployment, and separate Sentinel deployment.
+The Hub (`enforcer-central`) runs on the security team's server with PostgreSQL for state persistence and audit aggregation. It exposes two mTLS ports: 9200 for Sentinel client communication and 9201 for admin access and the Hub Console. The Sentinel (`enforcer-client`) runs on each developer machine, managed via sudo or MDM, and handles local enforcement through the daemon and hook handler. The Sentinel registers with the Hub, syncs policies (with hash-based change detection to minimize bandwidth), forwards audit events, and sends heartbeats. The Hub tracks Sentinel status (online, stale, offline) and can push policy updates and enforcement state changes to all connected Sentinels. Certificates for mTLS are generated via the `generate-certs.sh` script. Deployment scripts support single-machine (Hub + Sentinel collocated), separate Hub deployment, and separate Sentinel deployment.
 
 ### Differentiation
 
-AA Firewall differs from existing security tools in several concrete ways. Unlike AI gateways and LLM firewalls that inspect prompts at the model layer, AA Firewall governs the actual machine actions agents execute -- file writes, shell commands, network calls, package installs. Unlike endpoint security tools that monitor process behavior, AA Firewall understands agent intent and maps tool invocations to policy decisions before execution, not after. Unlike secrets managers that govern credential lifecycle, AA Firewall governs the full action chain from prompt to tool call to system effect. The system enforces mandatory mediation (not passive logging), preserves policy rationale for every decision, supports non-blocking approval workflows that maintain developer flow, and produces forensic-grade audit trails linking actor, intent, policy, and outcome. The combination of runtime interception, protocol-aware governance (MCP tool mappings), hierarchical policy with signed bundles, approval orchestration with scoped permissions, and replayable audit context in a single coordinated control plane is the product's structural advantage.
+Enforcer differs from existing security tools in several concrete ways. Unlike AI gateways and LLM firewalls that inspect prompts at the model layer, Enforcer governs the actual machine actions agents execute -- file writes, shell commands, network calls, package installs. Unlike endpoint security tools that monitor process behavior, Enforcer understands agent intent and maps tool invocations to policy decisions before execution, not after. Unlike secrets managers that govern credential lifecycle, Enforcer governs the full action chain from prompt to tool call to system effect. The system enforces mandatory mediation (not passive logging), preserves policy rationale for every decision, supports non-blocking approval workflows that maintain developer flow, and produces forensic-grade audit trails linking actor, intent, policy, and outcome. The combination of runtime interception, protocol-aware governance (MCP tool mappings), hierarchical policy with signed bundles, approval orchestration with scoped permissions, and replayable audit context in a single coordinated control plane is the product's structural advantage.
 
 ---
 
@@ -66,11 +66,11 @@ AA Firewall differs from existing security tools in several concrete ways. Unlik
 
 ### AIFund Submission Two-Page Summary
 
-AA_Firewall is a mandatory governance and security control plane for AI coding agents. It is designed for organizations that have already seen the productivity upside of agentic development but cannot responsibly scale deployment without enforceable safeguards, review workflows, and post-incident evidence. The product sits between the agent and the systems that agent can influence, evaluates every sensitive action against policy, and returns deterministic outcomes: allow, deny, or require approval.[cite:1]
+Enforcer is a mandatory governance and security control plane for AI coding agents. It is designed for organizations that have already seen the productivity upside of agentic development but cannot responsibly scale deployment without enforceable safeguards, review workflows, and post-incident evidence. The product sits between the agent and the systems that agent can influence, evaluates every sensitive action against policy, and returns deterministic outcomes: allow, deny, or require approval.[cite:1]
 
 The core market problem is not awareness that risk exists; it is execution risk at machine speed. Modern coding agents can read and write source code, execute shell commands, install dependencies, call external APIs, use MCP tools, and potentially access secrets or production-adjacent assets. Enterprise controls built for human developers and occasional misuse are not sufficient for autonomous or semi-autonomous systems that can chain high-impact operations in seconds. Teams therefore face a deadlock: they want agent leverage, but security and platform leaders cannot approve broad rollout without a trust boundary purpose-built for this new operating model.[cite:1]
 
-AA_Firewall’s wedge is to become that trust boundary. The first product commitment is mandatory mediation over high-risk action surfaces, not passive telemetry. This means the system must intercept action intent, evaluate policy context, and enforce decisions before execution where possible. Audit follows enforcement, not the other way around. The product is intentionally framed as a rollout enabler for enterprises, not as a generic dashboard. If a security team cannot use the product to assert "this action path is governed and reviewable," the product has failed its primary job.[cite:1]
+Enforcer’s wedge is to become that trust boundary. The first product commitment is mandatory mediation over high-risk action surfaces, not passive telemetry. This means the system must intercept action intent, evaluate policy context, and enforce decisions before execution where possible. Audit follows enforcement, not the other way around. The product is intentionally framed as a rollout enabler for enterprises, not as a generic dashboard. If a security team cannot use the product to assert "this action path is governed and reviewable," the product has failed its primary job.[cite:1]
 
 The buyer map reflects this: the primary buyer is the security engineering or security platform owner responsible for enterprise AI tooling governance; technical champions typically come from platform engineering; economic sponsorship comes from CISO-level leadership; and engineering leadership plus developer-experience teams are key stakeholders because adoption velocity depends on low-friction controls. Product strategy is therefore dual-axis: deliver enough policy power and evidence quality for security approval, while preserving developer productivity through explainable policy outcomes and scoped approval workflows.[cite:1]
 
@@ -81,11 +81,11 @@ The initial product scope focuses on the minimum control set required to move or
 - Human-in-the-loop approvals for high-risk but sometimes necessary actions (for example destructive commands or dependency changes).[cite:1]
 - Structured audit trail that links actor, intent, policy decision, and observed effect into a usable forensic record.[cite:1]
 
-Positioning for AIFund submission is straightforward: AA_Firewall is the "enterprise control gap" layer for agentic software development, analogous to how endpoint security, API gateways, and CI policy engines matured around earlier software lifecycle shifts. AI coding agents introduce a new execution surface. AA_Firewall is the policy and evidence substrate that lets enterprises adopt those agents without accepting unmanaged blast radius.
+Positioning for AIFund submission is straightforward: Enforcer is the "enterprise control gap" layer for agentic software development, analogous to how endpoint security, API gateways, and CI policy engines matured around earlier software lifecycle shifts. AI coding agents introduce a new execution surface. Enforcer is the policy and evidence substrate that lets enterprises adopt those agents without accepting unmanaged blast radius.
 
 Commercially, the near-term GTM motion is a security-led wedge in organizations actively piloting coding agents with 100 to 5,000 developers. Typical entry points are regulated teams, platform groups standardizing IDE/agent tooling, or security programs needing documented controls before broader rollout. Land strategy is one team or one business unit with clearly enforced policy and measurable friction reduction over manual review. Expand strategy is org-wide policy distribution, richer analytics, and broader protocol/domain coverage (MCP ecosystems, remote workspaces, database tools, and model-context protection). The business model hypothesis is seat- or active-developer-based pricing with control-plane value premiums for advanced policy packs, analytics, and compliance evidence exports.[cite:1]
 
-The product’s technical differentiation is not any single mechanism but the combination of several: runtime mediation, protocol-aware governance, approval orchestration, and replayable forensic context. Many tools can log process behavior; fewer can map prompt-driven intent to tool invocation to effect with policy rationale preserved. Fewer still can enforce policy in-line while maintaining developer flow and producing evidence packages useful to both security review and incident response. AA_Firewall is designed to unify those needs.
+The product’s technical differentiation is not any single mechanism but the combination of several: runtime mediation, protocol-aware governance, approval orchestration, and replayable forensic context. Many tools can log process behavior; fewer can map prompt-driven intent to tool invocation to effect with policy rationale preserved. Fewer still can enforce policy in-line while maintaining developer flow and producing evidence packages useful to both security review and incident response. Enforcer is designed to unify those needs.
 
 The product roadmap follows a staged risk-reduction strategy:
 
@@ -101,11 +101,11 @@ Key success metrics must reflect both security confidence and developer adoption
 
 Main risks are explicit and manageable: overblocking can hurt adoption; under-enforcement can erode trust; bypass surfaces outside controlled runtimes can reduce guarantees; and integration sprawl can slow time-to-value. Mitigation strategy is defense-in-depth architecture, phased rollout modes (audit, enforce, scoped approvals), explicit "mandatory where promised" positioning, and high-quality policy explainability to keep operators confident and developers productive.[cite:1]
 
-In summary, AA_Firewall is positioned as enterprise infrastructure for governed AI software execution: a practical and defensible layer that converts agent productivity from a risky experiment into an approvable operating model. For AIFund evaluation, the thesis is clear: as coding agents become standard, the winning enterprise stack requires a dedicated governance control plane, and AA_Firewall is built to be that layer.
+In summary, Enforcer is positioned as enterprise infrastructure for governed AI software execution: a practical and defensible layer that converts agent productivity from a risky experiment into an approvable operating model. For AIFund evaluation, the thesis is clear: as coding agents become standard, the winning enterprise stack requires a dedicated governance control plane, and Enforcer is built to be that layer.
 
 ## Product Vision
 
-AA_Firewall’s vision is to become the default trust boundary for agentic software development: the layer every enterprise inserts between AI coding agents and the environments, tools, protocols, and data those agents touch.[cite:1] Over time, it should evolve from a point solution for coding-agent safety into the control plane for agentic execution across local developer machines, secure containers, MCP ecosystems, network egress, secrets, data stores, and model-context pathways.[cite:1]
+Enforcer’s vision is to become the default trust boundary for agentic software development: the layer every enterprise inserts between AI coding agents and the environments, tools, protocols, and data those agents touch.[cite:1] Over time, it should evolve from a point solution for coding-agent safety into the control plane for agentic execution across local developer machines, secure containers, MCP ecosystems, network egress, secrets, data stores, and model-context pathways.[cite:1]
 
 The long-term product promise is simple: every sensitive action an AI coding agent attempts should be attributable, policy-evaluable, replayable, and, when needed, blockable in real time.[cite:1]
 
@@ -123,7 +123,7 @@ AI coding agents have shifted from passive assistance toward autonomous or semi-
 
 At the same time, enterprise demand is rising because engineering leaders see material productivity potential in code generation, debugging, testing, refactoring, and integration automation.[cite:1] Adoption is no longer blocked by lack of interest; it is blocked by lack of trusted security controls and acceptable governance evidence.[cite:1]
 
-The market is now at the point where the right control layer can become a standard part of the stack. MCP, containerized workspaces, agent orchestration, and enterprise AI platform governance all create concrete integration points for AA_Firewall to become that layer.[cite:1]
+The market is now at the point where the right control layer can become a standard part of the stack. MCP, containerized workspaces, agent orchestration, and enterprise AI platform governance all create concrete integration points for Enforcer to become that layer.[cite:1]
 
 ## Users and Buyers
 
@@ -150,7 +150,7 @@ The primary ideal customer profile is a mid-market or enterprise software organi
 
 ## Core Use Cases
 
-AA_Firewall should support a focused set of enterprise-critical use cases:
+Enforcer should support a focused set of enterprise-critical use cases:
 
 - Block writes outside the project directory or approved workspace root.[cite:1]
 - Deny shell commands with destructive or exfiltration potential unless explicitly approved.[cite:1]
@@ -163,7 +163,7 @@ AA_Firewall should support a focused set of enterprise-critical use cases:
 
 ## Product Scope
 
-The first version of AA_Firewall is a mandatory interception and enforcement product for AI coding agents in developer environments, not a generic AI observability or compliance dashboard.[cite:1] The product must mediate actions in real time, enforce configurable policies, and produce logs that a security reviewer can use meaningfully during both approvals and investigations.[cite:1]
+The first version of Enforcer is a mandatory interception and enforcement product for AI coding agents in developer environments, not a generic AI observability or compliance dashboard.[cite:1] The product must mediate actions in real time, enforce configurable policies, and produce logs that a security reviewer can use meaningfully during both approvals and investigations.[cite:1]
 
 ### In scope for MVP
 
@@ -226,7 +226,7 @@ The system must preserve:
 
 ## Policy and Governance Model
 
-AA_Firewall should use a hierarchical policy model. Organization-level policies define non-negotiable controls such as blocked hosts, forbidden file paths, protected credential classes, database restrictions, and required approvals.[cite:1] Team, repository, and developer-local guardrails may only tighten these controls, not weaken organization baselines.[cite:1]
+Enforcer should use a hierarchical policy model. Organization-level policies define non-negotiable controls such as blocked hosts, forbidden file paths, protected credential classes, database restrictions, and required approvals.[cite:1] Team, repository, and developer-local guardrails may only tighten these controls, not weaken organization baselines.[cite:1]
 
 A policy object should include subject, action, resource, conditions, effect, logging mode, and approval mode so the same engine can govern file access, shell execution, network egress, MCP calls, model routes, and secret handling.[cite:1]
 
@@ -239,7 +239,7 @@ flowchart LR
     Dev[Developer] --> IDE[IDE / Agent UI]
     IDE --> Agent[AI Coding Agent]
     Agent --> SDK[Agent Runtime Hook / SDK]
-    SDK --> FW[AA_Firewall Policy Engine]
+    SDK --> FW[Enforcer Policy Engine]
     FW --> Approvals[Approval Service]
     FW --> Audit[Audit Log / Replay Store]
 
@@ -261,11 +261,11 @@ flowchart LR
     FW --> Admin[Security / Platform Console]
 ```
 
-This architecture emphasizes that AA_Firewall is not a single endpoint agent or a single proxy. It is a coordinated policy plane joining intent, execution, communication, approval, and audit.[cite:1]
+This architecture emphasizes that Enforcer is not a single endpoint agent or a single proxy. It is a coordinated policy plane joining intent, execution, communication, approval, and audit.[cite:1]
 
 ## Secure Container Role
 
-Containers are a strong part of AA_Firewall’s enforcement design because they can constrain filesystem visibility, process scope, installed software paths, and network reachability within an isolated workspace. In practice, they are most valuable for limiting blast radius and making policy enforcement more deterministic for AI coding agents that can otherwise act directly on a host machine.[cite:1]
+Containers are a strong part of Enforcer’s enforcement design because they can constrain filesystem visibility, process scope, installed software paths, and network reachability within an isolated workspace. In practice, they are most valuable for limiting blast radius and making policy enforcement more deterministic for AI coding agents that can otherwise act directly on a host machine.[cite:1]
 
 However, containers are not sufficient alone for full enterprise governance. They do not automatically govern MCP traffic outside the controlled runtime, remote agent-to-agent flows, prompt assembly outside the container, or secret access mediated by external identity systems.[cite:1] The product should therefore position secure containers as an important substrate within a broader defense-in-depth control architecture.[cite:1]
 
@@ -282,9 +282,9 @@ flowchart TB
             Pkg[Package Manager]
             LocalNet[Container Network Stack]
         end
-        Daemon[AA_Firewall Local Daemon]
-        Proxy[AA_Firewall Network Proxy]
-        MCPGW[AA_Firewall MCP Gateway]
+        Daemon[Enforcer Local Daemon]
+        Proxy[Enforcer Network Proxy]
+        MCPGW[Enforcer MCP Gateway]
     end
 
     IDE --> Agent
@@ -334,7 +334,7 @@ flowchart LR
     Secrets --> Risk8[Credential Abuse]
 ```
 
-AA_Firewall’s differentiation depends on controlling these flows as one chain of behavior rather than as unrelated security events.[cite:1]
+Enforcer’s differentiation depends on controlling these flows as one chain of behavior rather than as unrelated security events.[cite:1]
 
 ### Threat-surface matrix
 
@@ -431,11 +431,11 @@ The MVP should optimize for depth over breadth, consistent with the venture brie
 
 ## Market Appetite
 
-Market appetite is driven by the tension between strong executive and engineering interest in AI coding agents and deep security discomfort about granting those agents broad access to code, terminals, credentials, networks, and internal systems.[cite:1] AA_Firewall solves a budget-justifiable blocking problem because it helps organizations move from constrained pilots to approved deployment.[cite:1]
+Market appetite is driven by the tension between strong executive and engineering interest in AI coding agents and deep security discomfort about granting those agents broad access to code, terminals, credentials, networks, and internal systems.[cite:1] Enforcer solves a budget-justifiable blocking problem because it helps organizations move from constrained pilots to approved deployment.[cite:1]
 
 ### Positioning statement
 
-AA_Firewall is the mandatory enforcement and governance layer for AI coding agents, giving enterprises real-time control over what agents can read, write, execute, call, and disclose across developer environments, secure containers, MCP tools, networks, and model workflows.[cite:1]
+Enforcer is the mandatory enforcement and governance layer for AI coding agents, giving enterprises real-time control over what agents can read, write, execute, call, and disclose across developer environments, secure containers, MCP tools, networks, and model workflows.[cite:1]
 
 ### Wedge GTM motion
 
@@ -456,9 +456,9 @@ These are scenario-planning figures rather than precise forecasts, but they supp
 
 ## Competitive Landscape
 
-AA_Firewall competes across direct, adjacent, and future-platform categories.
+Enforcer competes across direct, adjacent, and future-platform categories.
 
-| Category | What they do well | Weakness relative to AA_Firewall | Threat type |
+| Category | What they do well | Weakness relative to Enforcer | Threat type |
 |---|---|---|---|
 | AI gateway / LLM firewall vendors | Prompt inspection and model gateway controls | Limited machine-action governance | Adjacent [cite:1] |
 | Endpoint / developer security tools | Strong device and process visibility | Not built for agent intent or MCP semantics | Substitute / adjacent [cite:1] |

@@ -1,12 +1,12 @@
 > Author: Deepankar Das
 
-# AA_Firewall TDD Addendum: Future Architecture and Engineering Roadmap
+# Enforcer TDD Addendum: Future Architecture and Engineering Roadmap
 
 ## Purpose
 
-This addendum extends the AA_Firewall TDD with deeper detail on future architectural improvements that follow directly from the venture brief’s requirements around interception, policy enforcement, auditability, anomaly detection, secrets and context protection, multi-agent isolation, and org-level policy distribution.[cite:1] The goal is to translate those future-state ideas into a practical engineering roadmap with priorities, dependencies, and clear ownership domains for implementation planning.[cite:1]
+This addendum extends the Enforcer TDD with deeper detail on future architectural improvements that follow directly from the venture brief’s requirements around interception, policy enforcement, auditability, anomaly detection, secrets and context protection, multi-agent isolation, and org-level policy distribution.[cite:1] The goal is to translate those future-state ideas into a practical engineering roadmap with priorities, dependencies, and clear ownership domains for implementation planning.[cite:1]
 
-The main architectural direction remains unchanged: AA_Firewall should be built as a multi-agent governance and security platform that unifies policy, execution mediation, replay, and anomaly detection into a coherent enterprise control plane for AI coding-agent adoption.[cite:1]
+The main architectural direction remains unchanged: Enforcer should be built as a multi-agent governance and security platform that unifies policy, execution mediation, replay, and anomaly detection into a coherent enterprise control plane for AI coding-agent adoption.[cite:1]
 
 ## Why this addendum matters
 
@@ -30,7 +30,7 @@ Protocol mediation should evolve from coarse interception into semantic mediatio
 
 #### Why it matters
 
-This is how AA_Firewall becomes more than an endpoint wrapper. Deep protocol mediation makes the product aware of what the agent is trying to do at the semantic layer, which is especially important for MCP-driven workflows and multi-agent orchestration.[cite:1]
+This is how Enforcer becomes more than an endpoint wrapper. Deep protocol mediation makes the product aware of what the agent is trying to do at the semantic layer, which is especially important for MCP-driven workflows and multi-agent orchestration.[cite:1]
 
 ### 2. Increased remote-workspace standardization
 
@@ -78,7 +78,7 @@ Secret management should evolve from “check whether a secret was accessed” i
 
 #### Why it matters
 
-This shifts AA_Firewall from reactive monitoring toward active risk reduction. If the system can issue only narrowly scoped credentials after policy checks, many classes of misuse become impossible or far less damaging.[cite:1]
+This shifts Enforcer from reactive monitoring toward active risk reduction. If the system can issue only narrowly scoped credentials after policy checks, many classes of misuse become impossible or far less damaging.[cite:1]
 
 ### 5. Refined context-sensitive redaction
 
@@ -114,7 +114,7 @@ This reduces false positives and makes anomaly detection operationally credible.
 
 ### 7. Unified multi-agent governance and security control plane
 
-The long-term platform should unify four planes into one coherent system: policy, execution mediation, replay, and intelligence.[cite:1] This is the most important architectural theme because it turns AA_Firewall from a collection of controls into the enterprise operating layer for agentic software execution.[cite:1]
+The long-term platform should unify four planes into one coherent system: policy, execution mediation, replay, and intelligence.[cite:1] This is the most important architectural theme because it turns Enforcer from a collection of controls into the enterprise operating layer for agentic software execution.[cite:1]
 
 #### Target state
 
@@ -385,4 +385,4 @@ The most useful follow-on technical artifacts after this addendum are:
 
 ## Final note
 
-This addendum expands the future-state architecture without changing the core thesis from the TDD or the venture brief: AA_Firewall should become the enterprise governance plane for AI coding agents by combining mandatory execution mediation, policy evaluation, security-grade replay, and adaptive anomaly intelligence in one platform.[cite:1]
+This addendum expands the future-state architecture without changing the core thesis from the TDD or the venture brief: Enforcer should become the enterprise governance plane for AI coding agents by combining mandatory execution mediation, policy evaluation, security-grade replay, and adaptive anomaly intelligence in one platform.[cite:1]

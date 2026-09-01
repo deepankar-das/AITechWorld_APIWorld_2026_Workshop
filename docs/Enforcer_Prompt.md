@@ -1,10 +1,10 @@
 > Author: Deepankar Das
 
-**The Venture Idea \- AA Firewall**
+**The Venture Idea \- Enforcer**
 
 AI coding agents (Claude Code, Cursor, Copilot agents, MCP-driven workflows) are getting unprecedented access to developer machines and production environments: file systems, shell commands, package managers, API keys, cloud accounts. Most teams have no visibility into what these agents actually do, no policy layer, and no audit trail. Existing security tools were built for human developers, not autonomous agents acting at machine speed.
 
-AA Firewall is a security and policy layer that sits between AI coding agents and the systems they touch. Monitor agent actions in real time, enforce permission policies (what files, what commands, what network calls, what credentials), produce audit trails security teams can actually use, and give engineering leaders confidence to roll agents out across larger teams. The wedge is the security review that today blocks broad agent adoption inside mid-market and enterprise dev orgs.
+Enforcer is a security and policy layer that sits between AI coding agents and the systems they touch. Monitor agent actions in real time, enforce permission policies (what files, what commands, what network calls, what credentials), produce audit trails security teams can actually use, and give engineering leaders confidence to roll agents out across larger teams. The wedge is the security review that today blocks broad agent adoption inside mid-market and enterprise dev orgs.
 
 **Deliverables**
 

