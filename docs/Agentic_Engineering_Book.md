@@ -2,7 +2,7 @@
 >   
 > 
 
-# Agentic Engineering
+# Agentic Development Model
 
 ## Author: Deepankar Das
 
@@ -23,7 +23,7 @@
 **Part I — Foundations**
 
 - [Chapter 1: The Convergence Problem](#chapter-1-the-convergence-problem)  
-- [Chapter 2: What Is Agentic Engineering?](#chapter-2-what-is-agentic-engineering)  
+- [Chapter 2: What Is Agentic Development Model?](#chapter-2-what-is-agentic-engineering)  
 - [Chapter 3: First Principles](#chapter-3-first-principles)  
 - [Chapter 4: The Economics of Speed and Quality](#chapter-4-the-economics-of-speed-and-quality)
 
@@ -75,7 +75,7 @@
 
 - [Chapter 31: Metrics](#chapter-31-metrics)  
 - [Chapter 32: Adoption](#chapter-32-adoption)  
-- [Chapter 33: The Future of Agentic Engineering](#chapter-33-the-future-of-agentic-engineering)
+- [Chapter 33: The Future of Agentic Development Model](#chapter-33-the-future-of-agentic-engineering)
 
 **Back Matter**
 
@@ -83,7 +83,7 @@
 - [Appendix A — Glossary](#appendix-a--glossary)  
 - [Appendix B — Templates](#appendix-b--templates)  
 - [Appendix C — Banned Patterns Reference](#appendix-c--banned-patterns-reference)  
-- [Appendix D — Case Study: AgenticDevelopmentModel K34→K37 Convergence](#appendix-d--case-study-lexaxiom-k34k37-convergence)
+- [Appendix D — Case Study: the K34→K37 Convergence](#appendix-d--case-study-the-k34k37-convergence)
 
 ---
 
@@ -95,9 +95,9 @@ A year ago, the question "Can an AI write production software?" was contested. T
 
 The naive answer does not work. If you let a single AI agent write code and run the test suite after every commit and debug the failures, the loop diverges. New bugs land faster than old ones close. The codebase grows, the test suite grows, the regression surface grows, and the team ships slower and slower until shipping stops. This has been observed many times. It is not an AI problem — it is a methodology problem. The same pattern existed before AI, with humans. AI merely accelerates the divergence because AI writes code faster.
 
-This book documents a methodology that converges. AgenticDevelopmentModel, a multi-tenant legal-industry AI platform, was developed using this across a three-week regression campaign in which we reduced a 2,094-failure test cohort to zero while simultaneously shipping new features. At the peak of the campaign, three AI agents worked in parallel on different territories of the same codebase, reviewed each other's work with evidence-cited line-item folding, and committed single-purpose changes behind three-minute quality gates. The human executive approved architecture decisions, rebalanced ownership when an agent went off track, and reverted commits that violated discipline. No agent attribution appears in any commit message. No test has an escape hatch. No failure was diagnosed by intuition — every fix landed with a regression test that would have prevented the incident.
+This book documents a methodology that converges. The reference platform — a multi-tenant B2B SaaS platform — was developed using this across a three-week regression campaign in which we reduced a 2,094-failure test cohort to zero while simultaneously shipping new features. At the peak of the campaign, three AI agents worked in parallel on different territories of the same codebase, reviewed each other's work with evidence-cited line-item folding, and committed single-purpose changes behind three-minute quality gates. The human executive approved architecture decisions, rebalanced ownership when an agent went off track, and reverted commits that violated discipline. No agent attribution appears in any commit message. No test has an escape hatch. No failure was diagnosed by intuition — every fix landed with a regression test that would have prevented the incident.
 
-The methodology is called Agentic Engineering. It is the subject of this book.
+The methodology is called the Agentic Development Model, or ADM. It is the subject of this book.
 
 This book is not a prompt-engineering manual. It does not tell you how to make a model better at writing code. It assumes your agents write code competently. The book is about the *system* that surrounds the agents — the roles, the gates, the reviews, the memory, the runtime verification protocol — without which competent agents produce incompetent software.
 
@@ -107,7 +107,7 @@ The methodology is opinionated. It is also modular. You can adopt the whole book
 
 I owe a specific debt to every agent and collaborator who worked alongside me during the K-series convergence that grounded this methodology. Their cross-reviews — correcting my monocausal mis-attributions, demanding timestamped evidence for every claim — are the reason the methodology is real and not aspirational.
 
-— *Deepankar Das*, AgenticDevelopmentModel, 2026
+— *Deepankar Das*, 2026
 
 ---
 
@@ -222,11 +222,11 @@ This loop has four additions that make it converge:
 3. **Single-purpose commits** preserve bisect precision when a regression does land.  
 4. **Periodic verification runs** measure delta and feed residual failures into a structured ledger, so the next cycle targets the right problem.
 
-With these additions, `M < N` becomes achievable and the failure count falls toward zero. The AgenticDevelopmentModel project traversed `2094 → 445 → 10 → 0` across three weeks using this loop. Without the additions, the same work would have regressed indefinitely.
+With these additions, `M < N` becomes achievable and the failure count falls toward zero. The reference project traversed `2094 → 445 → 10 → 0` across three weeks using this loop. Without the additions, the same work would have regressed indefinitely.
 
 ### The thesis of this book
 
-Agentic Engineering is the set of practices that makes the converging loop real. It is not a single technique — it is an interlocking system of roles, gates, reviews, and artifacts that together move the steady-state behavior from divergent to convergent.
+Agentic Development Model is the set of practices that makes the converging loop real. It is not a single technique — it is an interlocking system of roles, gates, reviews, and artifacts that together move the steady-state behavior from divergent to convergent.
 
 You cannot adopt half the system. If you install per-commit gates but skip cross-agent review, self-authored bias will let regressions through the gates. If you install cross-agent review but keep bundled commits, the review surface is so wide that reviewers rubber-stamp. If you install both but allow shared ownership, nobody takes responsibility for the bundle and the whole thing rots.
 
@@ -236,18 +236,18 @@ The book's structure reflects this interlocking. Each chapter installs one guard
 
 - The naive AI coding loop diverges because feedback is dense, late, and grows the surface it verifies.  
 - The converging loop adds per-commit gates, cross-agent review, single-purpose commits, and periodic verification.  
-- Agentic Engineering is the methodology that operationalizes the converging loop.  
+- Agentic Development Model is the methodology that operationalizes the converging loop.  
 - Divergence is not an AI problem; AI merely accelerates what poor methodology produces.
 
 **Related chapters:** Chapter 4 (why this matters economically), Chapter 19 (the gates themselves), Chapter 21 (the review protocol), Chapter 29 (anti-patterns).
 
 ---
 
-## Chapter 2: What Is Agentic Engineering?
+## Chapter 2: What Is Agentic Development Model?
 
 ### Definition
 
-Agentic Engineering is a methodology for delivering software in which multiple AI coding agents and a single human executive work concurrently on the same codebase to produce production-quality output at AI speed. Agents hold durable ownership slices, land single-purpose commits behind fast per-commit gates, review each other's work with evidence-cited line-item folding, and coordinate asynchronously through persistent memory and a shared work surface. The human executive approves architecture decisions, rebalances ownership, and holds final authority on merge and revert.
+Agentic Development Model is a methodology for delivering software in which multiple AI coding agents and a single human executive work concurrently on the same codebase to produce production-quality output at AI speed. Agents hold durable ownership slices, land single-purpose commits behind fast per-commit gates, review each other's work with evidence-cited line-item folding, and coordinate asynchronously through persistent memory and a shared work surface. The human executive approves architecture decisions, rebalances ownership, and holds final authority on merge and revert.
 
 Let me unpack the definition by what it is and what it is not.
 
@@ -324,12 +324,12 @@ The four layers interact continuously:
 
 ### What it is not
 
-- **Not pair programming.** Pair programming is synchronous — two minds on one keyboard. Agentic Engineering is asynchronous — multiple minds on different keyboards, coordinating through artifacts.  
-- **Not mob programming.** Mob programming is N minds on one keyboard sequentially. Agentic Engineering is N minds on N keyboards concurrently.  
+- **Not pair programming.** Pair programming is synchronous — two minds on one keyboard. Agentic Development Model is asynchronous — multiple minds on different keyboards, coordinating through artifacts.  
+- **Not mob programming.** Mob programming is N minds on one keyboard sequentially. Agentic Development Model is N minds on N keyboards concurrently.  
 - **Not "just prompt the AI harder."** Better prompts improve per-commit output but do not solve the convergence problem. Convergence is a system property, not a per-commit property.  
 - **Not "let the AI do it all."** The human executive is load-bearing. Removing the executive produces either architectural drift (no AD gate) or ownership collapse (no territory enforcement).  
-- **Not assistive coding.** Assistive coding treats the AI as an autocomplete engine. Agentic Engineering treats the AI as an engineering peer with durable responsibility.  
-- **Not "vibe coding."** Vibe coding is aesthetically-guided iteration without structure. Agentic Engineering is structurally-guided iteration with explicit protocols.
+- **Not assistive coding.** Assistive coding treats the AI as an autocomplete engine. Agentic Development Model treats the AI as an engineering peer with durable responsibility.  
+- **Not "vibe coding."** Vibe coding is aesthetically-guided iteration without structure. Agentic Development Model is structurally-guided iteration with explicit protocols.
 
 ### What is new, what is not
 
@@ -340,21 +340,21 @@ The four layers interact continuously:
 - Specialist agents that exist only for a single task (explore, plan, evidence extraction).  
 - Machine-generated failure ledgers that decompose a large failure cohort into parallel work lanes.
 
-**What is not new** (Agentic Engineering draws on existing practice):
+**What is not new** (Agentic Development Model draws on existing practice):
 
-- Good engineering practices remain good engineering practices. Test-driven development, design-by-contract, code review, CI/CD, incident postmortems — all of these are preserved. Agentic Engineering adapts them to a multi-agent world; it does not replace them.  
+- Good engineering practices remain good engineering practices. Test-driven development, design-by-contract, code review, CI/CD, incident postmortems — all of these are preserved. Agentic Development Model adapts them to a multi-agent world; it does not replace them.  
 - Trunk-based development with single-purpose commits. This was a good idea before agents and remains a good idea with agents.  
 - Blameless postmortems. Still blameless. The "blame" vocabulary just disappears because there's no human pride at stake.
 
 ### The core insight
 
-The core insight of Agentic Engineering is that **structure scales agents more than capability does**. A more capable agent in a disciplined system outperforms a more capable agent in an undisciplined system by orders of magnitude. The discipline is where the leverage lives.
+The core insight of Agentic Development Model is that **structure scales agents more than capability does**. A more capable agent in a disciplined system outperforms a more capable agent in an undisciplined system by orders of magnitude. The discipline is where the leverage lives.
 
 This inverts the prevailing focus on model capability. If you are choosing between "better model with no methodology" and "decent model with full methodology," the methodology wins every time, because the methodology constrains the system's divergence while the model's capability merely affects per-commit output quality. Per-commit quality matters only when the system can converge. Methodology first, capability second.
 
 ### Chapter summary
 
-- Agentic Engineering \= multiple AI agents \+ one human executive \+ disciplined methodology \+ shared context, all producing software concurrently.  
+- Agentic Development Model \= multiple AI agents \+ one human executive \+ disciplined methodology \+ shared context, all producing software concurrently.  
 - Four layers interact: human, agent, shared context, codebase.  
 - It is distinct from pair programming, mob programming, assistive coding, and vibe coding.  
 - Methodology scales agents more than capability does. Choose discipline over model size.
@@ -475,7 +475,7 @@ Every factual claim in review, planning, or incident response carries:
 
 Counts without citations are inadmissible. Old counts reused as new state are banned. Confidence classification is explicit: **Verified** (direct evidence), **Inferred** (logical chain from verified), **Unknown** (acknowledged gap).
 
-Why this matters: without P3, agents fill gaps with plausible assumptions, and plausible assumptions compound into plausible mis-diagnoses. The AgenticDevelopmentModel K34 incident began with a plausible-sounding monocausal claim ("95% of failures are body-parser race") that cross-agent evidence-first review corrected to a three-cause model with pool exhaustion as the real primary.
+Why this matters: without P3, agents fill gaps with plausible assumptions, and plausible assumptions compound into plausible mis-diagnoses. The K34 incident began with a plausible-sounding monocausal claim ("95% of failures are body-parser race") that cross-agent evidence-first review corrected to a three-cause model with pool exhaustion as the real primary.
 
 ### P4 — No shared ownership
 
@@ -533,7 +533,7 @@ Consider two engineering organizations, both using AI agents:
 
 **Organization A** (no methodology): agents ship 100 commits per week. 30% introduce regressions. 20% of those regressions reach production. The team spends 60% of its time on bug fixes, 30% on new features, 10% on infrastructure.
 
-**Organization B** (Agentic Engineering): agents ship 80 commits per week. 5% introduce regressions caught by per-commit gates before merge. \<1% reach production. The team spends 15% of its time on bug fixes, 70% on new features, 15% on infrastructure.
+**Organization B** (Agentic Development Model): agents ship 80 commits per week. 5% introduce regressions caught by per-commit gates before merge. \<1% reach production. The team spends 15% of its time on bug fixes, 70% on new features, 15% on infrastructure.
 
 Organization B ships 20% fewer commits per week but 4–5× more delivered features, because its commits land once instead of landing-reverting-relanding. The "slower" organization is actually faster.
 
@@ -547,7 +547,7 @@ E\[cost\] \= C\_commit \+ P\_bug × (C\_bug \+ k × P\_prod × C\_bug)
 
 For realistic values — `C_commit` ≈ 10 minutes, `P_bug` ≈ 30% without methodology, `C_bug` ≈ 3 hours, `k` \= 10, `P_prod` ≈ 20% — expected cost per commit is about 2 hours, of which only 10 minutes is direct work. The other 110 minutes is debt paid later.
 
-Agentic Engineering reduces `P_bug` from 30% to under 5% by installing per-commit gates, and reduces `P_prod` from 20% to under 1% by installing cross-agent review. The expected cost per commit drops from 2 hours to about 15 minutes — an 8× improvement in effective throughput.
+Agentic Development Model reduces `P_bug` from 30% to under 5% by installing per-commit gates, and reduces `P_prod` from 20% to under 1% by installing cross-agent review. The expected cost per commit drops from 2 hours to about 15 minutes — an 8× improvement in effective throughput.
 
 ### Compounding
 
@@ -565,7 +565,7 @@ xychart-beta
 
     line \[60, 320, 560, 680, 760, 780\]
 
-*The bar chart shows Organization A (no methodology) starting faster but plateauing as technical debt dominates. The line shows Organization B (Agentic Engineering) starting more slowly because gates add upfront cost, but continuing linear growth as the codebase stays healthy.*
+*The bar chart shows Organization A (no methodology) starting faster but plateauing as technical debt dominates. The line shows Organization B (Agentic Development Model) starting more slowly because gates add upfront cost, but continuing linear growth as the codebase stays healthy.*
 
 Numbers are illustrative; the qualitative shape is what matters. The faster-starting organization is slower in the long run because its rate of work is bounded by its rate of debt accumulation.
 
@@ -573,11 +573,11 @@ Numbers are illustrative; the qualitative shape is what matters. The faster-star
 
 There is a cost that does not appear in commit-rate calculations: morale collapse. Teams that ship divergent codebases spend their days debugging instead of building. Engineers leave. The replacement cycle adds onboarding cost. The cycle compounds.
 
-Agentic Engineering preserves morale because the team spends its time on forward motion. Agents, interestingly, exhibit a morale-equivalent: an agent that lands three regressions in a row often develops pattern-matched caution that makes it less useful. Methodology keeps that from happening because the agent is not landing regressions in the first place.
+Agentic Development Model preserves morale because the team spends its time on forward motion. Agents, interestingly, exhibit a morale-equivalent: an agent that lands three regressions in a row often develops pattern-matched caution that makes it less useful. Methodology keeps that from happening because the agent is not landing regressions in the first place.
 
 ### ROI of specific guardrails
 
-Not every guardrail has the same ROI. Rough estimates for AgenticDevelopmentModel-scale projects:
+Not every guardrail has the same ROI. Rough estimates for reference-scale projects:
 
 | Guardrail | Install cost | Ongoing cost | Prevents |
 | :---- | :---- | :---- | :---- |
@@ -592,12 +592,12 @@ A single prevented production incident typically costs more than the entire guar
 
 ### The shipping speed comparison
 
-One concrete benchmark: before methodology, the AgenticDevelopmentModel project took three weeks to close the 2,094-failure cohort. After methodology, the `445 → 10 → 0` phase of that same campaign took 72 hours with four agents in parallel. The methodology did not make agents faster per commit; it made them slower per commit (gates take time). But the aggregate throughput was 5–10× higher because the commits landed once.
+One concrete benchmark: before methodology, the reference project took three weeks to close the 2,094-failure cohort. After methodology, the `445 → 10 → 0` phase of that same campaign took 72 hours with four agents in parallel. The methodology did not make agents faster per commit; it made them slower per commit (gates take time). But the aggregate throughput was 5–10× higher because the commits landed once.
 
 ### Chapter summary
 
 - The speed-quality tradeoff is false. Speed without quality is net-negative.  
-- Expected cost per commit drops \~8× under Agentic Engineering.  
+- Expected cost per commit drops \~8× under Agentic Development Model.  
 - Effects compound over time; divergent codebases plateau, convergent codebases grow linearly.  
 - ROI of specific guardrails is high; almost all pay back in a single prevented incident.  
 - Methodology makes per-commit cost higher and aggregate throughput higher simultaneously.
@@ -612,7 +612,7 @@ One concrete benchmark: before methodology, the AgenticDevelopmentModel project 
 
 ### The four roles
 
-Agentic Engineering defines four roles. Every person or agent operating on a project occupies exactly one role at any given time.
+Agentic Development Model defines four roles. Every person or agent operating on a project occupies exactly one role at any given time.
 
 flowchart TB
 
@@ -737,7 +737,7 @@ If no lanes are available in the agent's territory, the agent goes idle rather t
 
 ### What the executive does
 
-The executive is the single human with final authority over the project. The role is load-bearing. Without an executive, Agentic Engineering collapses into one of two failure modes: architectural drift (no gate on major decisions) or ownership collapse (no authority to rebalance).
+The executive is the single human with final authority over the project. The role is load-bearing. Without an executive, Agentic Development Model collapses into one of two failure modes: architectural drift (no gate on major decisions) or ownership collapse (no authority to rebalance).
 
 The executive's specific duties:
 
@@ -762,7 +762,7 @@ If the executive finds themselves routinely writing product code, something is w
 
 ### The cadence of executive decisions
 
-Executive time is the scarcest resource in Agentic Engineering. A project with many agents and one executive can easily saturate the executive with decisions if the protocol does not constrain the flow.
+Executive time is the scarcest resource in Agentic Development Model. A project with many agents and one executive can easily saturate the executive with decisions if the protocol does not constrain the flow.
 
 flowchart LR
 
@@ -806,7 +806,7 @@ Everything else flows without the executive. Agents propose; agents review; agen
 
 The executive's decisions — what to revert, what to approve, what to prioritize, what practices to ban — become the project's durable rules. Agents memorize these rules and apply them in future conversations.
 
-Examples from the AgenticDevelopmentModel project:
+Examples from the reference project:
 
 - "No bundled commits" — after a bundled commit regressed five initiatives simultaneously.  
 - "No shared ownership" — after `Owner: Agent-A + Agent-B` rows sat unworked for a week.  
@@ -840,7 +840,7 @@ On occasion — particularly early in a project's life — the executive reviews
 - Reviewer agents whose work the executive does not trust (fix: calibrate or replace).  
 - A recent incident that warrants tightened oversight (temporary; revert when stable).
 
-Chronic executive-as-reviewer indicates the agent system is not load-bearing and Agentic Engineering benefits are not being realized.
+Chronic executive-as-reviewer indicates the agent system is not load-bearing and Agentic Development Model benefits are not being realized.
 
 ### Chapter summary
 
@@ -1141,7 +1141,7 @@ This prevents the "ratchet" where old review claims get retroactively made true 
 
 Reviewers are specifically on guard against the monocausal trap: when a root-cause analysis collapses a multi-cause incident to a single dramatic cause because that cause is easy to fix or easy to narrate.
 
-The AgenticDevelopmentModel K34 incident is the canonical example. The author's first analysis claimed "95% of failures are body-parser race" because the error messages contained "stream is not readable" and the term sounded definitive. The reviewer counted: 37,583 × HTTP 503 responses (pool exhaustion), 28 × stream-not-readable (body-parser race), 16 × auth-fixture misconfiguration. The correct model was three causes with pool exhaustion as primary. The monocausal claim would have sequenced fixes incorrectly — body-parser first, pool exhaustion later — and the pool exhaustion would have continued to generate a third of the residual failures until caught much later.
+The K34 incident is the canonical example. The author's first analysis claimed "95% of failures are body-parser race" because the error messages contained "stream is not readable" and the term sounded definitive. The reviewer counted: 37,583 × HTTP 503 responses (pool exhaustion), 28 × stream-not-readable (body-parser race), 16 × auth-fixture misconfiguration. The correct model was three causes with pool exhaustion as primary. The monocausal claim would have sequenced fixes incorrectly — body-parser first, pool exhaustion later — and the pool exhaustion would have continued to generate a third of the residual failures until caught much later.
 
 The reviewer's discipline was simple: count the evidence before accepting the narrative. Chapter 22 covers this in depth.
 
@@ -1305,7 +1305,7 @@ This sequence is intentional. Memory gives the agent the executive's voice and t
 
 ### Conversation-scoped vs project-scoped
 
-There are two forms of persistence in Agentic Engineering:
+There are two forms of persistence in Agentic Development Model:
 
 - **Conversation-scoped**: tasks, the plan for the current conversation, context of the current work. These live in the agent's conversation buffer and go away when the conversation ends.  
 - **Project-scoped**: memory (survives across conversations) and the shared work surface (lives in the repo, survives everything).
@@ -1523,7 +1523,7 @@ Three specific guards:
 2. **Evaluate artifacts as-is.** Do not improve your own artifact to give it a higher score during comparison. If Doc A has a concept your Doc C lacks, that is a gap in Doc C — not a license to update Doc C before scoring. The matrix reflects what exists at evaluation time, not what could exist after improvement.  
 3. **Distinguish "originated" from "included."** If concept X appeared first in Source A and was later incorporated into Source B, A gets originality credit. B gets synthesis credit. The matrix records both.
 
-The AgenticDevelopmentModel project encountered all three biases during internal methodology comparisons. When two docs were compared and one had been written earlier, the later doc reliably scored higher because it had been able to incorporate the earlier doc's ideas. Without the "originated vs included" distinction, the later doc's synthesis was mis-credited as innovation.
+The reference project encountered all three biases during internal methodology comparisons. When two docs were compared and one had been written earlier, the later doc reliably scored higher because it had been able to incorporate the earlier doc's ideas. Without the "originated vs included" distinction, the later doc's synthesis was mis-credited as innovation.
 
 ### Moat analysis
 
@@ -1839,7 +1839,7 @@ Once approved, the plan is the project's durable surface for this feature. Every
 
 ### The parallelization problem
 
-An approved plan contains N tasks. Executing them sequentially would take N times longer than executing them concurrently. Agentic Engineering captures the parallelism where it's safe and serializes where it's not. This is lane-based parallelization.
+An approved plan contains N tasks. Executing them sequentially would take N times longer than executing them concurrently. Agentic Development Model captures the parallelism where it's safe and serializes where it's not. This is lane-based parallelization.
 
 ### Lanes
 
@@ -1989,7 +1989,7 @@ Under parallel execution, the single-owner rule still holds per lane. Lanes cann
 
 ### Worked example: K34–K37 convergence
 
-The AgenticDevelopmentModel K34–K37 convergence dispatched four parallel lanes in one 24-hour window:
+The K34–K37 convergence dispatched four parallel lanes in one 24-hour window:
 
 - Lane A (Agent-B): K35.1 failure ledger — independent, purely documentation.  
 - Lane B (Agent-B): K34.5 webhook raw-body invariant — safety pin, no contract overlap.  
@@ -2192,7 +2192,7 @@ If you cannot name a product change that breaks the assertion, delete the assert
 
 A test passes. Does that mean the feature works?
 
-The default assumption is yes. The Agentic Engineering discipline is to distrust the default. Tests have specific failure modes that let them pass even when the feature is broken. A test with such a failure mode is worse than no test — it creates false confidence, which is harder to recover from than no confidence.
+The default assumption is yes. The Agentic Development Model discipline is to distrust the default. Tests have specific failure modes that let them pass even when the feature is broken. A test with such a failure mode is worse than no test — it creates false confidence, which is harder to recover from than no confidence.
 
 This chapter enumerates the failure modes. An agent writing tests walks each checklist before the test is accepted.
 
@@ -2466,7 +2466,7 @@ The same regression might manifest as a 503 under load, a Playwright assertion f
 
 ### Before the incident, not after
 
-The discipline is to write the invariant when the contract is defined, not after the contract silently drifts and causes an incident. The AgenticDevelopmentModel project repeatedly landed invariants *after* incidents:
+The discipline is to write the invariant when the contract is defined, not after the contract silently drifts and causes an incident. The reference project repeatedly landed invariants *after* incidents:
 
 - INV1 (middleware order) landed after a body-parser × session race produced 28 stream-not-readable errors.  
 - INV4 (pool budget) landed after the team discovered an aggregate pool exceeded the configured max.  
@@ -2478,7 +2478,7 @@ In each case, the invariant would have prevented the incident if it had existed.
 
 An invariant backlog is a permanent, monotonically growing asset. Once an invariant lands, it stays. Deleting an invariant requires executive approval (Chapter 6).
 
-A representative backlog from the AgenticDevelopmentModel project:
+A representative backlog from the reference project:
 
 | \# | Name | Pins |
 | :---- | :---- | :---- |
@@ -2958,7 +2958,7 @@ A change that clears AD gate but fails per-commit gates is a coding issue — th
 
 ### Worked example: cell-mode as default
 
-The K36 decision at AgenticDevelopmentModel illustrates the AD process.
+The K36 decision at the reference platform illustrates the AD process.
 
 **Context**: run `Radar_Run_2026-04-20_020103` produced 445 Playwright failures under shard-mode topology. Cell-mode had been built as an opt-in alternative. Evidence suggested cell-mode could eliminate the residual pool-pressure failures that shard-mode architecturally could not solve.
 
@@ -3155,7 +3155,7 @@ Review-free commits outside these exceptions are reverted.
 
 ### Why evidence discipline matters
 
-Every claim in an Agentic Engineering artifact — a plan, a review, a root-cause analysis, a status update — either carries evidence or is inadmissible. Without discipline here, claims rot into assumption into mis-attribution into wrong fixes. The AgenticDevelopmentModel K34 incident (a monocausal mis-attribution nearly routed the team to the wrong primary fix) is the canonical example.
+Every claim in an Agentic Development Model artifact — a plan, a review, a root-cause analysis, a status update — either carries evidence or is inadmissible. Without discipline here, claims rot into assumption into mis-attribution into wrong fixes. The K34 incident (a monocausal mis-attribution nearly routed the team to the wrong primary fix) is the canonical example.
 
 Evidence discipline is a habit, not a process. It applies to every sentence that makes a factual claim.
 
@@ -3211,7 +3211,7 @@ The fix: every count carries its source timestamp. When citing a prior count, ei
 
 When an incident has multiple contributing causes, the analysis must enumerate them with per-cause share-of-evidence, not collapse to a monocausal story.
 
-Canonical example from the AgenticDevelopmentModel K34 incident:
+Canonical example from the K34 incident:
 
 **Initial monocausal claim (wrong)**: "\~95% of failures are body-parser × session race because the error messages say 'stream is not readable'."
 
@@ -3392,9 +3392,9 @@ Memory (Chapter 9\) and the work surface are both forms of persistence, but they
 
 An agent asks: is this a durable rule that will apply to future initiatives? → memory. Is this state specific to this initiative? → work surface. Same agent might write both simultaneously.
 
-### Example: AgenticDevelopmentModel vol3
+### Example: the reference platform vol3
 
-The AgenticDevelopmentModel RADAR convergence campaign lived on one work surface: [`docs/testing_strategy/AgenticDevelopmentModel_RADAR_Runner_Implementation_vol3.md`](http://testing_strategy/LexAxiom_RADAR_Runner_Implementation_vol3.md). At the end of the K34–K37 work it was \~4,000 lines containing:
+The reference project's RADAR convergence campaign lived on one work surface: the RADAR runner implementation doc (vol. 3). At the end of the K34–K37 work it was \~4,000 lines containing:
 
 - The phased implementation plan.  
 - Per-K-item sections with status transitions.  
@@ -3599,7 +3599,7 @@ The build step must happen before the deploy step. A stale image deployed with `
 Production-class infrastructure is split across GCP projects:
 
 - **AaaS project** (`engineering-build-001`): main product deploys.  
-- **AI project** (`AgenticDevelopmentModel-ai-core`): AI model training and deploys.
+- **AI project** (`the reference platform-ai-core`): AI model training and deploys.
 
 Every `gcloud` command passes `--project=` explicitly. Relying on `gcloud config get-value project` is banned — the ambient project is unreliable across sessions and across developers.
 
@@ -3607,7 +3607,7 @@ Scripts enforce the rule by rejecting the wrong project:
 
 \# In scripts/deploy.sh
 
-if \[\[ "$GCP\_PROJECT" \== "AgenticDevelopmentModel-ai-core" \]\]; then
+if \[\[ "$GCP\_PROJECT" \== "the reference platform-ai-core" \]\]; then
 
   echo "FATAL: This script deploys the AaaS, not the AI project."
 
@@ -3633,7 +3633,7 @@ Tier 2 tests that call services missing from the env produce `[INTEGRATION TEST 
 
 After a staging deploy, run Playwright against the staging URL:
 
-PLAYWRIGHT\_BASE\_URL=https://staging.AgenticDevelopmentModel.ai ./scripts/radar-validate.sh \--smoke
+PLAYWRIGHT\_BASE\_URL=https://staging.the reference platform.ai ./scripts/radar-validate.sh \--smoke
 
 This verifies the feature end-to-end against the deployed image, including:
 
@@ -3804,7 +3804,7 @@ On any signal, the on-call engages, the Failure Ledger Protocol begins (Chapter 
 
 ### Observability for agentic engineering
 
-Observability is load-bearing for Agentic Engineering. The Failure Ledger Protocol (Chapter 28\) depends on machine-readable evidence from runtime behavior. Without observability, an incident analysis becomes operator memory and speculation — exactly what evidence-first discipline (Chapter 22\) forbids.
+Observability is load-bearing for Agentic Development Model. The Failure Ledger Protocol (Chapter 28\) depends on machine-readable evidence from runtime behavior. Without observability, an incident analysis becomes operator memory and speculation — exactly what evidence-first discipline (Chapter 22\) forbids.
 
 Observability serves three audiences:
 
@@ -4134,7 +4134,7 @@ These patterns surface reliably in multi-agent work because the failure modes ar
 
 **What to do instead**: per-commit gates (Chapter 19\) catch 80% of potential regressions at \< 3 minutes. Full runs are milestone-scheduled.
 
-**Seen at**: the AgenticDevelopmentModel project spent a week in reactive debugging before installing per-commit gates. Failure count oscillated between 100 and 300 daily. After gates, oscillation stopped and the count fell monotonically.
+**Seen at**: the reference project spent a week in reactive debugging before installing per-commit gates. Failure count oscillated between 100 and 300 daily. After gates, oscillation stopped and the count fell monotonically.
 
 ### AP-2. Bundled commits
 
@@ -4144,7 +4144,7 @@ These patterns surface reliably in multi-agent work because the failure modes ar
 
 **What to do instead**: split before landing. Each commit does exactly one thing (Chapter 8).
 
-**Seen at**: the 87432f4 commit in the AgenticDevelopmentModel project bundled five initiatives and caused a 10× E2E regression. The forward-fix attempt introduced additional regressions. The bundle eventually reverted, losing a full week's work.
+**Seen at**: the 87432f4 commit in the reference project bundled five initiatives and caused a 10× E2E regression. The forward-fix attempt introduced additional regressions. The bundle eventually reverted, losing a full week's work.
 
 ### AP-3. Self-review
 
@@ -4154,7 +4154,7 @@ These patterns surface reliably in multi-agent work because the failure modes ar
 
 **What to do instead**: always a different reviewer. If no agent available, the executive reviews.
 
-**Seen at**: early AgenticDevelopmentModel multi-agent work had self-reviews approved as "quick double-check." Every self-review passed; every one missed issues that later cross-reviews caught within minutes.
+**Seen at**: early the reference platform multi-agent work had self-reviews approved as "quick double-check." Every self-review passed; every one missed issues that later cross-reviews caught within minutes.
 
 ### AP-4. Monocausal root-cause
 
@@ -4174,7 +4174,7 @@ These patterns surface reliably in multi-agent work because the failure modes ar
 
 **What to do instead**: every count carries a timestamp and source artifact. When citing older counts, tag explicitly as historical.
 
-**Seen at**: multiple weekly reports in the AgenticDevelopmentModel project reused "445 failures" as current state for two days after the count had dropped to 10\. Status updates described current state incorrectly.
+**Seen at**: multiple weekly reports in the reference project reused "445 failures" as current state for two days after the count had dropped to 10\. Status updates described current state incorrectly.
 
 ### AP-6. Shared ownership
 
@@ -4184,7 +4184,7 @@ These patterns surface reliably in multi-agent work because the failure modes ar
 
 **What to do instead**: split into two items with a same-commit gate if both must work together (Chapter 14), or reassign to one agent cleanly.
 
-**Seen at**: AgenticDevelopmentModel plan rows marked "Claude \+ Codex" sat unworked for days. After the executive directive "no shared ownership," the same rows resolved within hours when split.
+**Seen at**: the reference platform plan rows marked "Claude \+ Codex" sat unworked for days. After the executive directive "no shared ownership," the same rows resolved within hours when split.
 
 ### AP-7. Escape-hatch assertions
 
@@ -4254,7 +4254,7 @@ These patterns surface reliably in multi-agent work because the failure modes ar
 
 **What to do instead**: agent-neutral artifacts (Chapter 3, Principle 7). Internal coordination docs may name agents; production-visible artifacts never do.
 
-**Seen at**: several early commits in AgenticDevelopmentModel carried AI trailers. The executive directive "no agent names in the checkins" cleaned them up and prevented recurrence.
+**Seen at**: several early commits in the reference platform carried AI trailers. The executive directive "no agent names in the checkins" cleaned them up and prevented recurrence.
 
 ### AP-14. UI-layer testing as first-line coverage
 
@@ -4264,7 +4264,7 @@ These patterns surface reliably in multi-agent work because the failure modes ar
 
 **What to do instead**: shift verification left (Chapter 15). Catch data contract regressions at Tier 1/Tier 2\. Reserve E2E for user-visible flows.
 
-**Seen at**: the K37.2 through K37.5 AgenticDevelopmentModel residual failures were all `seed → API → UI shape` contract drifts that per-route Tier 2 tests would have caught instantly. They instead surfaced as Playwright failures after 5 minutes of test execution.
+**Seen at**: the K37.2 through K37.5 the reference platform residual failures were all `seed → API → UI shape` contract drifts that per-route Tier 2 tests would have caught instantly. They instead surfaced as Playwright failures after 5 minutes of test execution.
 
 ### Chapter summary
 
@@ -4281,7 +4281,7 @@ These patterns surface reliably in multi-agent work because the failure modes ar
 
 ### The K-series convergence story
 
-This chapter walks through the specific multi-agent incident that grounded the methodology: the AgenticDevelopmentModel K-series convergence from April 2026\. The story is told in detail because every principle in earlier chapters has a specific moment in this story where it either held or would have prevented a problem.
+This chapter walks through the specific multi-agent incident that grounded the methodology: the reference platform K-series convergence from April 2026\. The story is told in detail because every principle in earlier chapters has a specific moment in this story where it either held or would have prevented a problem.
 
 ### Week 0: the baseline
 
@@ -4456,7 +4456,7 @@ The methodology's principle of evidence-first diagnosis applies equally to self-
 
 ### Why metrics matter here
 
-The methodology is only useful if it measurably produces the outcomes it claims. Metrics turn "we use Agentic Engineering" into verifiable claims. They also let the team detect drift — the slow departure from discipline that precedes every failure — before it becomes expensive.
+The methodology is only useful if it measurably produces the outcomes it claims. Metrics turn "we use Agentic Development Model" into verifiable claims. They also let the team detect drift — the slow departure from discipline that precedes every failure — before it becomes expensive.
 
 Metrics fall into four categories: outcome, discipline, speed, and coverage. Each category answers a different question:
 
@@ -4481,7 +4481,7 @@ flowchart LR
 
 - **Residual-failure ratio**: `failures_after / failures_before` across verification cycles. Target ≤ 0.5 (halving per cycle). If a cycle fails to halve, categorization was wrong.  
 - **Regression catch rate by tier**: percentage of regressions caught at per-commit gates (G1–G5) versus later stages. Target ≥ 80%. Higher \= methodology working; lower \= gates insufficient or coverage gaps.  
-- **Days-to-zero**: from a multi-failure run to a fully-green verification. AgenticDevelopmentModel baseline: 3 weeks. With the methodology fully installed: target \< 1 week.  
+- **Days-to-zero**: from a multi-failure run to a fully-green verification. the reference platform baseline: 3 weeks. With the methodology fully installed: target \< 1 week.  
 - **Production incident rate**: number of incidents (any severity) per calendar month. Target: monotonically declining quarter-over-quarter.
 
 ### Discipline metrics
@@ -4562,7 +4562,7 @@ The dashboard is auto-generated from the shared work surface and the test harnes
 
 ### Adopting from scratch
 
-A team adopting Agentic Engineering from an unstructured baseline goes through a predictable sequence. The sequence is approximately linear; skipping steps produces visible failures within a week.
+A team adopting Agentic Development Model from an unstructured baseline goes through a predictable sequence. The sequence is approximately linear; skipping steps produces visible failures within a week.
 
 flowchart TB
 
@@ -4658,13 +4658,13 @@ Minimum tooling:
 - **Agent memory**: a persistent filesystem location per agent.  
 - **Work-surface support**: markdown in the repo; no special tooling.
 
-Teams with less tooling than this need to install it before adopting. Agentic Engineering depends on these substrates.
+Teams with less tooling than this need to install it before adopting. Agentic Development Model depends on these substrates.
 
 ### Organizational considerations
 
 Reporting structure: the executive should have authority to approve ADs and revert commits. If the executive must get approval from a higher authority for these actions, the approval latency slows everything. If the executive can act unilaterally, the methodology runs at its natural cadence.
 
-Agent count: minimum 2 (one to write, one to review). Maximum depends on territory decomposition. AgenticDevelopmentModel operated at 2–4 concurrent implementation agents plus the executive.
+Agent count: minimum 2 (one to write, one to review). Maximum depends on territory decomposition. the reference platform operated at 2–4 concurrent implementation agents plus the executive.
 
 Hybrid human/agent teams: human engineers can occupy implementation or reviewer roles alongside agents. The protocols are identical. Don't distinguish humans from agents in plans or reviews — same rules apply.
 
@@ -4680,7 +4680,7 @@ Hybrid human/agent teams: human engineers can occupy implementation or reviewer 
 
 ---
 
-## Chapter 33: The Future of Agentic Engineering
+## Chapter 33: The Future of Agentic Development Model
 
 ### What changes when agents get better
 
@@ -4717,15 +4717,15 @@ Several patterns are probably durable and will extend:
 ### What remains a research question
 
 - **Can agents hold the executive role?** Current answer: no. The executive is load-bearing for architecture, and current agents are not trusted with that authority. Future: if agents gain provable alignment and legal accountability, perhaps.  
-- **How large can the agent roster grow?** AgenticDevelopmentModel ran 3–4 concurrent agents comfortably. Larger rosters produce coordination overhead even with territories. The limit may be 8–12 before the coordination cost exceeds the parallelism benefit.  
-- **How does the methodology adapt to very different domains?** Agentic Engineering was developed on a SaaS web application. Embedded systems, safety-critical software, ML training code — each has different rhythms. The principles are probably portable; the specifics (cell-mode topology, SPA version defense) are not.  
+- **How large can the agent roster grow?** the reference platform ran 3–4 concurrent agents comfortably. Larger rosters produce coordination overhead even with territories. The limit may be 8–12 before the coordination cost exceeds the parallelism benefit.  
+- **How does the methodology adapt to very different domains?** Agentic Development Model was developed on a SaaS web application. Embedded systems, safety-critical software, ML training code — each has different rhythms. The principles are probably portable; the specifics (cell-mode topology, SPA version defense) are not.  
 - **Does the methodology scale down to solo developers?** A team of one developer \+ 2–3 agents might benefit from much of the methodology. The parts about parallel lanes and cross-agent review adapt; the parts about multi-agent ownership compress.
 
 ### The long arc
 
 Software engineering has evolved through successive methodologies: waterfall to agile to continuous delivery. Each methodology emerged to solve a specific pain: waterfall for contract clarity, agile for user feedback, CD for release cadence.
 
-Agentic Engineering emerges to solve the pain that AI agents create: divergence under high commit velocity. The methodology will evolve, be renamed, be re-specified. The specifics — gate timings, tier counts, invariant taxonomies — will change as tooling and agent capability change.
+Agentic Development Model emerges to solve the pain that AI agents create: divergence under high commit velocity. The methodology will evolve, be renamed, be re-specified. The specifics — gate timings, tier counts, invariant taxonomies — will change as tooling and agent capability change.
 
 What probably endures:
 
@@ -5055,7 +5055,7 @@ Option X because \<reasoning tied to tradeoffs\>.
 
 ---
 
-## Appendix D — Case Study: AgenticDevelopmentModel K34→K37 Convergence
+## Appendix D — Case Study: the K34→K37 Convergence
 
 ### Timeline
 
@@ -5075,7 +5075,7 @@ Option X because \<reasoning tied to tradeoffs\>.
 
 ### Artifacts
 
-- Shared work surface: `docs/testing_strategy/AgenticDevelopmentModel_RADAR_Runner_Implementation_vol3.md` — \~4,000 lines at campaign end.  
+- Shared work surface: the RADAR runner implementation doc (vol. 3) — \~4,000 lines at campaign end.  
 - Verification run artifacts: `.radar-runs/Radar_Run_2026-04-20_140055__post-k35-step1-admission-verify/` and `.../Radar_Run_2026-04-20_142533__post-k36-cell-default-verify/`.  
 - AD records: K34.0, K35.3 / K35.4, K36.0 — all explicitly executive-approved.  
 - Invariants landed: INV1 (middleware order), K34.5 (webhook raw-body), K36.5.1 (shard-launcher deprecation annotation).
@@ -5113,4 +5113,4 @@ Every retroactive prevention is a lesson that fed back into the methodology. Inv
 
 *This book is a living document. Revisions are tracked in the project's shared work surface. Corrections and additions welcomed.*
 
-*End of Agentic Engineering.*  
+*End of Agentic Development Model.*  
